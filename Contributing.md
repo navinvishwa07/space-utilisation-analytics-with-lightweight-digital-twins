@@ -1,4 +1,4 @@
-siet/
+your-repo-root/
 │
 ├── backend/
 │   │
@@ -30,11 +30,12 @@ siet/
 │   └── app.py
 │
 ├── docs/
+│   ├── MVP.md
 │   ├── PRD.md
-│   ├── architecture.md
-│   ├── ai_rules.md
-│   ├── skills.md
-│   └── plan.md
+│   ├── Architecture.md
+│   ├── AI_rules.md
+│   ├── Skills.md
+│   └── Plan.md
 │
 ├── tests/
 │   ├── test_prediction.py
