@@ -1,0 +1,185 @@
+"""HTTP controller layer for availability prediction."""
+
+from __future__ import annotations
+
+from datetime import date
+
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from pydantic import BaseModel, Field, field_validator
+
+from backend.services.matching_service import (
+    AllocationOptimizationService,
+    AllocationValidationError,
+    SolverDependencyError,
+)
+from backend.services.prediction_service import (
+    AvailabilityPredictionService,
+    ModelNotReadyError,
+    PredictionValidationError,
+    RoomNotFoundError,
+)
+from backend.utils.config import get_settings
+from backend.utils.logger import get_logger
+
+
+logger = get_logger(__name__)
+settings = get_settings()
+
+router = APIRouter(tags=["prediction"])
+
+
+class AvailabilityPredictionRequest(BaseModel):
+    """Input DTO validated before entering service layer."""
+
+    room_id: int = Field(gt=0)
+    date: date
+    time_slot: str = Field(pattern=settings.prediction_time_slot_regex)
+
+    @field_validator("time_slot")
+    @classmethod
+    def validate_time_slot_boundaries(cls, value: str) -> str:
+        start_hour, end_hour = (int(item) for item in value.split("-"))
+        if start_hour >= end_hour:
+            raise ValueError("time_slot start hour must be less than end hour")
+        return value
+
+
+class AvailabilityPredictionResponse(BaseModel):
+    """Output DTO constrained to probability bounds."""
+
+    idle_probability: float = Field(ge=0.0, le=1.0)
+    confidence_score: float = Field(ge=0.0, le=1.0)
+
+
+class AllocationDecisionResponse(BaseModel):
+    request_id: int = Field(gt=0)
+    room_id: int = Field(gt=0)
+    score: float = Field(ge=0.0)
+
+
+class OptimizeAllocationRequest(BaseModel):
+    requested_date: date
+    requested_time_slot: str = Field(pattern=settings.prediction_time_slot_regex)
+    idle_probability_threshold: float | None = Field(default=None, ge=0.0, le=1.0)
+    stakeholder_usage_cap: float | None = Field(default=None, gt=0.0, le=1.0)
+
+    @field_validator("requested_time_slot")
+    @classmethod
+    def validate_requested_slot_boundaries(cls, value: str) -> str:
+        start_hour, end_hour = (int(item) for item in value.split("-"))
+        if start_hour >= end_hour:
+            raise ValueError("requested_time_slot start hour must be less than end hour")
+        return value
+
+
+class OptimizeAllocationResponse(BaseModel):
+    allocations: list[AllocationDecisionResponse]
+    objective_value: float = Field(ge=0.0)
+    fairness_metric: float = Field(ge=0.0, le=1.0)
+
+
+def get_prediction_service(request: Request) -> AvailabilityPredictionService:
+    service = getattr(request.app.state, "prediction_service", None)
+    if service is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Prediction service is not initialized",
+        )
+    return service
+
+
+def get_matching_service(request: Request) -> AllocationOptimizationService:
+    service = getattr(request.app.state, "matching_service", None)
+    if service is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Matching service is not initialized",
+        )
+    return service
+
+
+@router.post(
+    "/predict_availability",
+    response_model=AvailabilityPredictionResponse,
+    status_code=status.HTTP_200_OK,
+)
+def predict_availability(
+    payload: AvailabilityPredictionRequest,
+    service: AvailabilityPredictionService = Depends(get_prediction_service),
+) -> AvailabilityPredictionResponse:
+    """Run inference only; model training lifecycle is managed at startup."""
+    try:
+        result = service.predict(
+            room_id=payload.room_id,
+            date=payload.date.isoformat(),
+            time_slot=payload.time_slot,
+        )
+        return AvailabilityPredictionResponse(**result)
+    except PredictionValidationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
+    except RoomNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
+    except ModelNotReadyError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        ) from exc
+    except Exception as exc:  # pragma: no cover - defensive fallback
+        logger.exception("Unexpected inference failure")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to generate prediction",
+        ) from exc
+
+
+@router.post(
+    "/optimize_allocation",
+    response_model=OptimizeAllocationResponse,
+    status_code=status.HTTP_200_OK,
+)
+def optimize_allocation(
+    payload: OptimizeAllocationRequest,
+    service: AllocationOptimizationService = Depends(get_matching_service),
+) -> OptimizeAllocationResponse:
+    """Run demand forecast and CP-SAT allocation optimization."""
+    try:
+        result = service.optimize_allocation(
+            requested_date=payload.requested_date.isoformat(),
+            requested_time_slot=payload.requested_time_slot,
+            idle_probability_threshold=payload.idle_probability_threshold,
+            stakeholder_usage_cap=payload.stakeholder_usage_cap,
+        )
+        return OptimizeAllocationResponse(
+            allocations=[
+                AllocationDecisionResponse(
+                    request_id=item.request_id,
+                    room_id=item.room_id,
+                    score=item.score,
+                )
+                for item in result.allocations
+            ],
+            objective_value=result.objective_value,
+            fairness_metric=result.fairness_metric,
+        )
+    except AllocationValidationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
+    except SolverDependencyError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        ) from exc
+    except Exception as exc:  # pragma: no cover - defensive fallback
+        logger.exception("Unexpected optimization failure")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to optimize allocation",
+        ) from exc

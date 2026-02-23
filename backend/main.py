@@ -1,25 +1,68 @@
-"""
-Build this system using production-grade engineering standards.
-Use clean architecture with strict separation of concerns.
-Write modular, testable, maintainable code designed for long-term scaling.
-Avoid hardcoded values. Use configuration management.
-Include structured logging, validation, and defensive error handling.
-Document why decisions are made, not just what is implemented.
-Assume this will undergo senior engineering review.
-Optimize for clarity, reliability, observability, and extensibility over speed.
-"""
+"""FastAPI application bootstrap and lifecycle wiring."""
 
-from backend.repository.data_repository import (
-    initialize_database,
-    seed_synthetic_data,
-)
+from __future__ import annotations
+
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI
+
+from backend.conrollers.allocation_controller import router as prediction_router
+from backend.repository.data_repository import DataRepository
+from backend.services.matching_service import AllocationOptimizationService
+from backend.services.prediction_service import AvailabilityPredictionService
+from backend.utils.config import get_settings
+from backend.utils.logger import get_logger
 
 
-def startup():
-    initialize_database()
-    seed_synthetic_data()
-    print("System ready.")
+logger = get_logger(__name__)
+
+
+def create_app() -> FastAPI:
+    """Build the app with explicit startup lifecycle dependencies."""
+    settings = get_settings()
+    repository = DataRepository(settings)
+    prediction_service = AvailabilityPredictionService(
+        repository=repository,
+        settings=settings,
+    )
+    matching_service = AllocationOptimizationService(
+        repository=repository,
+        settings=settings,
+    )
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        startup(app)
+        yield
+
+    app = FastAPI(
+        title=settings.app_name,
+        version=settings.app_version,
+        lifespan=lifespan,
+    )
+    app.include_router(prediction_router)
+
+    app.state.repository = repository
+    app.state.prediction_service = prediction_service
+    app.state.matching_service = matching_service
+
+    return app
+
+
+def startup(app: FastAPI | None = None) -> None:
+    """Initialize schema, seed data, and train prediction model once."""
+    target_app = app or create_app()
+    repository: DataRepository = target_app.state.repository
+    prediction_service: AvailabilityPredictionService = target_app.state.prediction_service
+
+    repository.initialize_database()
+    repository.seed_synthetic_data()
+    prediction_service.train_model()
+    logger.info("System startup completed")
+
+
+app = create_app()
 
 
 if __name__ == "__main__":
-    startup()
+    startup(app)
