@@ -10,6 +10,7 @@ class AllocationConfig:
     idle_probability_threshold: float
     stakeholder_usage_cap: float
     solver_max_time_seconds: int
+    solver_random_seed: int
     objective_scale: int
     cp_sat_workers: int
 
@@ -21,6 +22,8 @@ def validate_allocation_config(config: AllocationConfig) -> None:
         raise ValueError("stakeholder_usage_cap must be in (0, 1]")
     if config.solver_max_time_seconds <= 0:
         raise ValueError("solver_max_time_seconds must be > 0")
+    if config.solver_random_seed < 0:
+        raise ValueError("solver_random_seed must be >= 0")
     if config.objective_scale <= 0:
         raise ValueError("objective_scale must be > 0")
     if config.cp_sat_workers <= 0:

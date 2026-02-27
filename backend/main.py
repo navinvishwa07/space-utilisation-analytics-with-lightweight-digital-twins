@@ -10,6 +10,7 @@ from backend.conrollers.allocation_controller import router as prediction_router
 from backend.repository.data_repository import DataRepository
 from backend.services.matching_service import AllocationOptimizationService
 from backend.services.prediction_service import AvailabilityPredictionService
+from backend.services.simulation_service import SimulationService
 from backend.utils.config import get_settings
 from backend.utils.logger import get_logger
 
@@ -29,6 +30,11 @@ def create_app() -> FastAPI:
         repository=repository,
         settings=settings,
     )
+    simulation_service = SimulationService(
+        repository=repository,
+        settings=settings,
+        prediction_service=prediction_service,
+    )
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
@@ -45,6 +51,7 @@ def create_app() -> FastAPI:
     app.state.repository = repository
     app.state.prediction_service = prediction_service
     app.state.matching_service = matching_service
+    app.state.simulation_service = simulation_service
 
     return app
 

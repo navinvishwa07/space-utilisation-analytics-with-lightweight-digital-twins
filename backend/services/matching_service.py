@@ -80,7 +80,7 @@ def _validate_inputs(
     validate_allocation_config(config)
 
 
-def _compute_fairness_metric(
+def compute_fairness_metric(
     requests: list[AllocationRequest],
     allocations: list[AllocationDecision],
 ) -> float:
@@ -98,6 +98,14 @@ def _compute_fairness_metric(
     if denominator == 0.0:
         return 0.0
     return float(numerator / denominator)
+
+
+def _compute_fairness_metric(
+    requests: list[AllocationRequest],
+    allocations: list[AllocationDecision],
+) -> float:
+    """Backward-compatible alias kept for internal call sites/tests."""
+    return compute_fairness_metric(requests=requests, allocations=allocations)
 
 
 def forecast_demand(
@@ -241,6 +249,7 @@ def solve_model(
     solver = cp_model.CpSolver()
     solver.parameters.max_time_in_seconds = float(config.solver_max_time_seconds)
     solver.parameters.num_search_workers = config.cp_sat_workers
+    solver.parameters.random_seed = config.solver_random_seed
 
     status = solver.Solve(artifacts.model)
     status_name = solver.StatusName(status)
@@ -276,7 +285,7 @@ def solve_model(
         if request.request_id not in allocated_ids
     ]
     objective_value = float(solver.ObjectiveValue()) / config.objective_scale
-    fairness_metric = _compute_fairness_metric(requests=requests, allocations=allocations)
+    fairness_metric = compute_fairness_metric(requests=requests, allocations=allocations)
 
     logger.info(
         (
@@ -351,6 +360,7 @@ class AllocationOptimizationService:
                 else self._settings.allocation_stakeholder_usage_cap
             ),
             solver_max_time_seconds=self._settings.allocation_solver_max_time_seconds,
+            solver_random_seed=self._settings.allocation_solver_random_seed,
             objective_scale=self._settings.allocation_objective_scale,
             cp_sat_workers=self._settings.allocation_cp_sat_workers,
         )

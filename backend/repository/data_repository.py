@@ -437,6 +437,36 @@ class DataRepository:
                 for row in cursor.fetchall()
             ]
 
+    def list_all_pending_requests(self) -> list[AllocationRequest]:
+        """Return all pending requests across dates/slots in deterministic order."""
+        with self._connect() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                SELECT
+                    id,
+                    requested_capacity,
+                    requested_date,
+                    requested_time_slot,
+                    priority_weight,
+                    stakeholder_id
+                FROM Requests
+                WHERE status = 'PENDING'
+                ORDER BY requested_date ASC, requested_time_slot ASC, id ASC;
+                """
+            )
+            return [
+                AllocationRequest(
+                    request_id=int(row["id"]),
+                    requested_capacity=int(row["requested_capacity"]),
+                    requested_date=str(row["requested_date"]),
+                    requested_time_slot=str(row["requested_time_slot"]),
+                    priority_weight=float(row["priority_weight"]),
+                    stakeholder_id=str(row["stakeholder_id"]),
+                )
+                for row in cursor.fetchall()
+            ]
+
     def list_idle_predictions(
         self,
         requested_date: str,

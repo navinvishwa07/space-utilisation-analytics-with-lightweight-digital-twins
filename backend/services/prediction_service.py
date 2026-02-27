@@ -301,8 +301,21 @@ class AvailabilityPredictionService:
         # Defensive fallback if estimator only knows class 0.
         return 0.0
 
-    def predict(self, room_id: int, date: str, time_slot: str) -> Dict[str, float]:
-        """Run availability inference and persist prediction for observability."""
+    def predict(
+        self,
+        room_id: int,
+        date: str,
+        time_slot: str,
+        *,
+        persist: bool = True,
+    ) -> Dict[str, float]:
+        """Run availability inference with optional persistence.
+
+        WHY `persist` exists:
+        - Simulation workflows must execute what-if runs without mutating
+          production observability tables.
+        - Default remains `True` to preserve existing endpoint behavior.
+        """
         with self._model_lock:
             feature_frame = self.prepare_features(
                 room_id=room_id,
@@ -313,12 +326,13 @@ class AvailabilityPredictionService:
             idle_probability = max(0.0, min(1.0, 1.0 - occupancy_probability))
             confidence_score = abs(idle_probability - 0.5) * 2.0
 
-            self._repository.save_prediction(
-                room_id=room_id,
-                date=date,
-                time_slot=time_slot,
-                idle_probability=idle_probability,
-            )
+            if persist:
+                self._repository.save_prediction(
+                    room_id=room_id,
+                    date=date,
+                    time_slot=time_slot,
+                    idle_probability=idle_probability,
+                )
 
             result = PredictionResponse(
                 idle_probability=idle_probability,

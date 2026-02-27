@@ -18,6 +18,11 @@ from backend.services.prediction_service import (
     PredictionValidationError,
     RoomNotFoundError,
 )
+from backend.services.simulation_service import (
+    SimulationService,
+    SimulationValidationError,
+    TemporaryConstraints,
+)
 from backend.utils.config import get_settings
 from backend.utils.logger import get_logger
 
@@ -78,6 +83,70 @@ class OptimizeAllocationResponse(BaseModel):
     fairness_metric: float = Field(ge=0.0, le=1.0)
 
 
+class TemporaryConstraintsRequest(BaseModel):
+    idle_threshold: float | None = Field(default=None, ge=0.0, le=1.0)
+    stakeholder_cap: float | None = Field(default=None, gt=0.0, le=1.0)
+    capacity_override: dict[int, int] | None = None
+    priority_adjustment: dict[str, float] | None = None
+
+    @field_validator("capacity_override")
+    @classmethod
+    def validate_capacity_override(cls, value: dict[int, int] | None) -> dict[int, int] | None:
+        if value is None:
+            return None
+        for room_id, capacity in value.items():
+            if room_id <= 0:
+                raise ValueError("capacity_override room_id must be positive")
+            if capacity <= 0:
+                raise ValueError("capacity_override capacity must be > 0")
+        return value
+
+    @field_validator("priority_adjustment")
+    @classmethod
+    def validate_priority_adjustment(
+        cls,
+        value: dict[str, float] | None,
+    ) -> dict[str, float] | None:
+        if value is None:
+            return None
+        for stakeholder, weight in value.items():
+            if not stakeholder.strip():
+                raise ValueError("priority_adjustment stakeholder key must be non-empty")
+            if weight <= 0.0:
+                raise ValueError("priority_adjustment weight must be > 0")
+        return value
+
+
+class SimulateRequest(BaseModel):
+    temporary_constraints: TemporaryConstraintsRequest = Field(
+        default_factory=TemporaryConstraintsRequest
+    )
+
+
+class SimulationMetricsResponse(BaseModel):
+    utilization_rate: float = Field(ge=0.0, le=1.0)
+    requests_satisfied: int = Field(ge=0)
+    objective_value: float = Field(ge=0.0)
+    total_rooms_utilized: int = Field(ge=0)
+    average_idle_probability_utilized: float = Field(ge=0.0, le=1.0)
+    fairness_metric: float = Field(ge=0.0, le=1.0)
+
+
+class SimulationDeltaResponse(BaseModel):
+    utilization_change: float
+    request_change: int
+    objective_change: float
+    total_rooms_utilized_change: int
+    avg_idle_probability_change: float
+    fairness_change: float
+
+
+class SimulateResponse(BaseModel):
+    baseline: SimulationMetricsResponse
+    simulation: SimulationMetricsResponse
+    delta: SimulationDeltaResponse
+
+
 def get_prediction_service(request: Request) -> AvailabilityPredictionService:
     service = getattr(request.app.state, "prediction_service", None)
     if service is None:
@@ -94,6 +163,16 @@ def get_matching_service(request: Request) -> AllocationOptimizationService:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Matching service is not initialized",
+        )
+    return service
+
+
+def get_simulation_service(request: Request) -> SimulationService:
+    service = getattr(request.app.state, "simulation_service", None)
+    if service is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Simulation service is not initialized",
         )
     return service
 
@@ -182,4 +261,46 @@ def optimize_allocation(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to optimize allocation",
+        ) from exc
+
+
+@router.post(
+    "/simulate",
+    response_model=SimulateResponse,
+    status_code=status.HTTP_200_OK,
+)
+def simulate(
+    payload: SimulateRequest,
+    service: SimulationService = Depends(get_simulation_service),
+) -> SimulateResponse:
+    """Run an isolated in-memory what-if simulation."""
+    try:
+        constraints = TemporaryConstraints(
+            idle_threshold=payload.temporary_constraints.idle_threshold,
+            stakeholder_cap=payload.temporary_constraints.stakeholder_cap,
+            capacity_override=payload.temporary_constraints.capacity_override,
+            priority_adjustment=payload.temporary_constraints.priority_adjustment,
+        )
+        result = service.run_simulation(constraints)
+        return SimulateResponse(**result)
+    except SimulationValidationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
+    except AllocationValidationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
+    except SolverDependencyError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        ) from exc
+    except Exception as exc:  # pragma: no cover - defensive fallback
+        logger.exception("Unexpected simulation failure")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to run simulation",
         ) from exc

@@ -69,9 +69,12 @@ class Settings:
     allocation_idle_probability_threshold: float
     allocation_stakeholder_usage_cap: float
     allocation_solver_max_time_seconds: int
+    allocation_solver_random_seed: int
     allocation_objective_scale: int
     allocation_cp_sat_workers: int
     allocation_forecast_history_days: int
+    simulation_cp_sat_workers: int
+    simulation_solver_random_seed: int
 
 
 @lru_cache(maxsize=1)
@@ -124,10 +127,13 @@ def get_settings() -> Settings:
             "ALLOCATION_SOLVER_MAX_TIME_SECONDS",
             10,
         ),
+        allocation_solver_random_seed=_env_int("ALLOCATION_SOLVER_RANDOM_SEED", 42),
         allocation_objective_scale=_env_int("ALLOCATION_OBJECTIVE_SCALE", 1000),
         allocation_cp_sat_workers=_env_int("ALLOCATION_CP_SAT_WORKERS", 8),
         allocation_forecast_history_days=_env_int(
             "ALLOCATION_FORECAST_HISTORY_DAYS",
             30,
         ),
+        simulation_cp_sat_workers=_env_int("SIMULATION_CP_SAT_WORKERS", 1),
+        simulation_solver_random_seed=_env_int("SIMULATION_SOLVER_RANDOM_SEED", 42),
     )
