@@ -1,0 +1,502 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SIET Admin Dashboard</title>
+    <style>
+      :root {
+        --bg: #f4f7fb;
+        --panel: #ffffff;
+        --text: #0b1b2b;
+        --muted: #5b6b7d;
+        --accent: #0d6d77;
+        --accent-soft: #d6eef0;
+        --ok: #157347;
+        --warn: #a85707;
+        --error: #b42318;
+        --line: #d6dde6;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Space Grotesk", "Segoe UI", sans-serif;
+        color: var(--text);
+        background:
+          radial-gradient(circle at 10% -10%, #d8eef4 0%, transparent 35%),
+          radial-gradient(circle at 100% 0%, #f4e4cc 0%, transparent 30%),
+          var(--bg);
+      }
+
+      .wrapper {
+        max-width: 1200px;
+        margin: 24px auto 48px;
+        padding: 0 16px;
+      }
+
+      .hero {
+        background: linear-gradient(120deg, #0f4f73, #0d6d77);
+        color: #fff;
+        border-radius: 18px;
+        padding: 22px 20px;
+        box-shadow: 0 20px 40px rgba(15, 79, 115, 0.2);
+      }
+
+      .hero h1 {
+        margin: 0 0 6px;
+        font-size: 1.6rem;
+      }
+
+      .hero p {
+        margin: 0;
+        color: rgba(255, 255, 255, 0.9);
+      }
+
+      .grid {
+        display: grid;
+        gap: 14px;
+        margin-top: 14px;
+      }
+
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 14px;
+      }
+
+      h2 {
+        margin: 0 0 10px;
+        font-size: 1rem;
+      }
+
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: end;
+      }
+
+      label {
+        display: block;
+        font-size: 0.8rem;
+        color: var(--muted);
+        margin-bottom: 4px;
+      }
+
+      input,
+      select,
+      button {
+        font: inherit;
+      }
+
+      input,
+      select {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 8px 10px;
+        min-width: 140px;
+      }
+
+      button {
+        background: var(--accent);
+        color: white;
+        border: 0;
+        border-radius: 10px;
+        padding: 9px 14px;
+        cursor: pointer;
+        transition: transform 140ms ease, opacity 140ms ease;
+      }
+
+      button:hover {
+        transform: translateY(-1px);
+      }
+
+      button:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+      }
+
+      .secondary {
+        background: #0e3f64;
+      }
+
+      .ghost {
+        background: #eef3f8;
+        color: #1f2a37;
+      }
+
+      .toggle {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-right: 6px;
+      }
+
+      .table-wrap {
+        overflow: auto;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 760px;
+        background: #fff;
+      }
+
+      th,
+      td {
+        text-align: left;
+        padding: 9px;
+        border-bottom: 1px solid var(--line);
+        font-size: 0.86rem;
+      }
+
+      th {
+        background: #f6f9fd;
+        color: #243648;
+      }
+
+      .metric-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+        gap: 10px;
+      }
+
+      .metric {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 10px;
+        background: #fafcff;
+      }
+
+      .metric small {
+        color: var(--muted);
+      }
+
+      .metric strong {
+        display: block;
+        margin-top: 6px;
+        font-size: 1.1rem;
+      }
+
+      .status {
+        margin-top: 10px;
+        font-size: 0.9rem;
+      }
+
+      .status.ok {
+        color: var(--ok);
+      }
+
+      .status.warn {
+        color: var(--warn);
+      }
+
+      .status.error {
+        color: var(--error);
+      }
+
+      @media (max-width: 740px) {
+        .hero h1 {
+          font-size: 1.3rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrapper">
+      <section class="hero">
+        <h1>Space Utilization Digital Twin Dashboard</h1>
+        <p>Login → Predict → Allocate → Simulate → Approve</p>
+      </section>
+
+      <div class="grid">
+        <section class="panel">
+          <h2>Authentication</h2>
+          <div class="controls">
+            <div>
+              <label for="adminToken">Admin Token</label>
+              <input id="adminToken" type="password" placeholder="Enter ADMIN_TOKEN" />
+            </div>
+            <button id="loginBtn">Login</button>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>Workflow Controls</h2>
+          <div class="controls">
+            <div>
+              <label for="targetDate">Date</label>
+              <input id="targetDate" type="date" />
+            </div>
+            <div>
+              <label for="timeSlot">Time Slot</label>
+              <select id="timeSlot">
+                <option>09-11</option>
+                <option>11-13</option>
+                <option>14-16</option>
+                <option>16-18</option>
+              </select>
+            </div>
+            <div>
+              <label for="idleThreshold">Idle Probability Threshold</label>
+              <input id="idleThreshold" type="number" min="0" max="1" step="0.01" placeholder="optional" />
+            </div>
+            <div>
+              <label for="usageCap">Stakeholder Usage Cap</label>
+              <input id="usageCap" type="number" min="0.01" max="1" step="0.01" placeholder="optional" />
+            </div>
+            <button id="predictBtn" class="secondary">Predict</button>
+            <button id="allocateBtn" class="secondary">Allocate</button>
+            <button id="approveBtn">Approve</button>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>Simulation Toggle</h2>
+          <div class="controls">
+            <label class="toggle">
+              <input id="enableOverrides" type="checkbox" />
+              Enable Temporary Overrides
+            </label>
+            <div>
+              <label for="priorityWeight">Stakeholder Priority Weight</label>
+              <input id="priorityWeight" type="number" min="0.01" step="0.01" placeholder="optional" />
+            </div>
+            <button id="simulateBtn">Run Simulation</button>
+            <button id="refreshMetricsBtn" class="ghost">Refresh Metrics</button>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>Metrics (Before vs After)</h2>
+          <div class="metric-grid">
+            <div class="metric">
+              <small>baseline_idle_activation_rate</small>
+              <strong id="mBaseline">-</strong>
+            </div>
+            <div class="metric">
+              <small>simulated_idle_activation_rate</small>
+              <strong id="mSimulated">-</strong>
+            </div>
+            <div class="metric">
+              <small>allocation_efficiency_score</small>
+              <strong id="mEfficiency">-</strong>
+            </div>
+            <div class="metric">
+              <small>utilization_delta_percentage</small>
+              <strong id="mDelta">-</strong>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>Idle Probability</h2>
+          <div class="table-wrap">
+            <table id="predictionTable">
+              <thead>
+                <tr>
+                  <th>room_id</th>
+                  <th>date</th>
+                  <th>time_slot</th>
+                  <th>predicted_idle_probability</th>
+                  <th>confidence_score</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>Allocation Results</h2>
+          <div class="table-wrap">
+            <table id="allocationTable">
+              <thead>
+                <tr>
+                  <th>room_id</th>
+                  <th>stakeholder</th>
+                  <th>time_slot</th>
+                  <th>allocation_score</th>
+                  <th>priority_weight</th>
+                  <th>constraint_status</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
+      <div id="status" class="status"></div>
+    </div>
+
+    <script>
+      const state = { bearerToken: "" };
+
+      const statusNode = document.getElementById("status");
+      const predictionBody = document.querySelector("#predictionTable tbody");
+      const allocationBody = document.querySelector("#allocationTable tbody");
+
+      const today = new Date().toISOString().slice(0, 10);
+      document.getElementById("targetDate").value = today;
+
+      function setStatus(message, level = "ok") {
+        statusNode.className = `status ${level}`;
+        statusNode.textContent = message;
+      }
+
+      function numOrNull(value) {
+        if (value === "" || value === null || value === undefined) {
+          return null;
+        }
+        const parsed = Number(value);
+        return Number.isNaN(parsed) ? null : parsed;
+      }
+
+      async function apiRequest(path, options = {}) {
+        const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
+        if (state.bearerToken) {
+          headers.Authorization = `Bearer ${state.bearerToken}`;
+        }
+        const response = await fetch(path, { ...options, headers });
+        if (!response.ok) {
+          const errorBody = await response.json().catch(() => ({}));
+          throw new Error(errorBody.detail || `Request failed (${response.status})`);
+        }
+        return response.status === 204 ? null : response.json();
+      }
+
+      function renderTable(tbody, rows, columns) {
+        tbody.innerHTML = "";
+        rows.forEach((row) => {
+          const tr = document.createElement("tr");
+          columns.forEach((column) => {
+            const td = document.createElement("td");
+            const value = row[column];
+            td.textContent = value === null || value === undefined ? "N/A" : String(value);
+            tr.appendChild(td);
+          });
+          tbody.appendChild(tr);
+        });
+      }
+
+      function renderMetrics(metrics) {
+        document.getElementById("mBaseline").textContent =
+          Number(metrics.baseline_idle_activation_rate).toFixed(4);
+        document.getElementById("mSimulated").textContent =
+          Number(metrics.simulated_idle_activation_rate).toFixed(4);
+        document.getElementById("mEfficiency").textContent =
+          Number(metrics.allocation_efficiency_score).toFixed(4);
+        document.getElementById("mDelta").textContent =
+          `${Number(metrics.utilization_delta_percentage).toFixed(2)}%`;
+      }
+
+      document.getElementById("loginBtn").addEventListener("click", async () => {
+        try {
+          const adminToken = document.getElementById("adminToken").value.trim();
+          const payload = { admin_token: adminToken };
+          const result = await apiRequest("/login", { method: "POST", body: JSON.stringify(payload) });
+          state.bearerToken = result.access_token;
+          setStatus("Login successful. Protected endpoints are unlocked.", "ok");
+        } catch (error) {
+          setStatus(error.message, "error");
+        }
+      });
+
+      document.getElementById("predictBtn").addEventListener("click", async () => {
+        try {
+          const payload = {
+            date: document.getElementById("targetDate").value,
+            time_slot: document.getElementById("timeSlot").value,
+          };
+          const result = await apiRequest("/predict", { method: "POST", body: JSON.stringify(payload) });
+          renderTable(predictionBody, result.predictions, [
+            "room_id",
+            "date",
+            "time_slot",
+            "predicted_idle_probability",
+            "confidence_score",
+          ]);
+          setStatus(`Prediction completed for ${result.predictions.length} rooms.`, "ok");
+        } catch (error) {
+          setStatus(error.message, "error");
+        }
+      });
+
+      document.getElementById("allocateBtn").addEventListener("click", async () => {
+        try {
+          const payload = {
+            requested_date: document.getElementById("targetDate").value,
+            requested_time_slot: document.getElementById("timeSlot").value,
+            idle_probability_threshold: numOrNull(document.getElementById("idleThreshold").value),
+            stakeholder_usage_cap: numOrNull(document.getElementById("usageCap").value),
+          };
+          const result = await apiRequest("/allocate", { method: "POST", body: JSON.stringify(payload) });
+          renderTable(allocationBody, result.allocations, [
+            "room_id",
+            "stakeholder",
+            "time_slot",
+            "allocation_score",
+            "priority_weight",
+            "constraint_status",
+          ]);
+          setStatus(
+            `Allocation preview completed. Objective=${Number(result.objective_value).toFixed(4)}.`,
+            "ok"
+          );
+        } catch (error) {
+          setStatus(error.message, "error");
+        }
+      });
+
+      document.getElementById("simulateBtn").addEventListener("click", async () => {
+        try {
+          const useOverrides = document.getElementById("enableOverrides").checked;
+          const payload = useOverrides
+            ? {
+                stakeholder_priority_weight: numOrNull(document.getElementById("priorityWeight").value),
+                idle_probability_threshold: numOrNull(document.getElementById("idleThreshold").value),
+                stakeholder_usage_cap: numOrNull(document.getElementById("usageCap").value),
+              }
+            : {};
+          await apiRequest("/simulate", { method: "POST", body: JSON.stringify(payload) });
+          const metrics = await apiRequest("/metrics");
+          renderMetrics(metrics);
+          setStatus("Simulation completed and metrics refreshed.", "ok");
+        } catch (error) {
+          setStatus(error.message, "error");
+        }
+      });
+
+      document.getElementById("approveBtn").addEventListener("click", async () => {
+        try {
+          const result = await apiRequest("/approve", { method: "POST" });
+          setStatus(
+            `Approval complete. Persisted allocations=${result.approved_allocations_count}.`,
+            "ok"
+          );
+        } catch (error) {
+          setStatus(error.message, "error");
+        }
+      });
+
+      document.getElementById("refreshMetricsBtn").addEventListener("click", async () => {
+        try {
+          const metrics = await apiRequest("/metrics");
+          renderMetrics(metrics);
+          setStatus("Metrics refreshed.", "warn");
+        } catch (error) {
+          setStatus(error.message, "error");
+        }
+      });
+    </script>
+  </body>
+</html>

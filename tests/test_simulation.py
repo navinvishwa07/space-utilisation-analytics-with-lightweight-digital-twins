@@ -149,6 +149,7 @@ def test_simulate_endpoint_validates_unknown_capacity_override_room(tmp_path):
                 "capacity_override": {"9999": 25}
             }
         },
+        headers={"Authorization": "Bearer admin-token"},
     )
 
     assert response.status_code == 400

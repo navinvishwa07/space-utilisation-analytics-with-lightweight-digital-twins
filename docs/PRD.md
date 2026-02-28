@@ -1,4 +1,5 @@
 # Product Requirements Document (PRD)
+
 ## Space Utilization Digital Twin
 
 ---
@@ -225,5 +226,3 @@ The Digital Twin prioritizes:
 Utilization efficiency with fairness influence.
 
 The system balances optimization rigor with adaptability, making it applicable across universities, public institutions, NGOs, and shared infrastructure networks.
-
----

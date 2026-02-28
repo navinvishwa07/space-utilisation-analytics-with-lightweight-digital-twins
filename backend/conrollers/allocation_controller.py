@@ -7,6 +7,7 @@ from datetime import date
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field, field_validator
 
+from backend.conrollers.dependencies import get_dashboard_service, require_admin
 from backend.services.matching_service import (
     AllocationOptimizationService,
     AllocationValidationError,
@@ -18,11 +19,8 @@ from backend.services.prediction_service import (
     PredictionValidationError,
     RoomNotFoundError,
 )
-from backend.services.simulation_service import (
-    SimulationService,
-    SimulationValidationError,
-    TemporaryConstraints,
-)
+from backend.services.dashboard_service import DashboardValidationError, DashboardWorkflowService
+from backend.services.simulation_service import SimulationValidationError
 from backend.utils.config import get_settings
 from backend.utils.logger import get_logger
 
@@ -121,6 +119,9 @@ class SimulateRequest(BaseModel):
     temporary_constraints: TemporaryConstraintsRequest = Field(
         default_factory=TemporaryConstraintsRequest
     )
+    stakeholder_priority_weight: float | None = Field(default=None, gt=0.0)
+    idle_probability_threshold: float | None = Field(default=None, ge=0.0, le=1.0)
+    stakeholder_usage_cap: float | None = Field(default=None, gt=0.0, le=1.0)
 
 
 class SimulationMetricsResponse(BaseModel):
@@ -163,16 +164,6 @@ def get_matching_service(request: Request) -> AllocationOptimizationService:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Matching service is not initialized",
-        )
-    return service
-
-
-def get_simulation_service(request: Request) -> SimulationService:
-    service = getattr(request.app.state, "simulation_service", None)
-    if service is None:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Simulation service is not initialized",
         )
     return service
 
@@ -269,21 +260,32 @@ def optimize_allocation(
     response_model=SimulateResponse,
     status_code=status.HTTP_200_OK,
 )
-def simulate(
+async def simulate(
     payload: SimulateRequest,
-    service: SimulationService = Depends(get_simulation_service),
+    workflow_service: DashboardWorkflowService = Depends(get_dashboard_service),
+    _: None = Depends(require_admin),
 ) -> SimulateResponse:
     """Run an isolated in-memory what-if simulation."""
     try:
-        constraints = TemporaryConstraints(
-            idle_threshold=payload.temporary_constraints.idle_threshold,
-            stakeholder_cap=payload.temporary_constraints.stakeholder_cap,
+        effective_idle_threshold = (
+            payload.idle_probability_threshold
+            if payload.idle_probability_threshold is not None
+            else payload.temporary_constraints.idle_threshold
+        )
+        effective_stakeholder_cap = (
+            payload.stakeholder_usage_cap
+            if payload.stakeholder_usage_cap is not None
+            else payload.temporary_constraints.stakeholder_cap
+        )
+        result = workflow_service.run_simulation(
+            idle_probability_threshold=effective_idle_threshold,
+            stakeholder_usage_cap=effective_stakeholder_cap,
+            stakeholder_priority_weight=payload.stakeholder_priority_weight,
             capacity_override=payload.temporary_constraints.capacity_override,
             priority_adjustment=payload.temporary_constraints.priority_adjustment,
         )
-        result = service.run_simulation(constraints)
         return SimulateResponse(**result)
-    except SimulationValidationError as exc:
+    except (SimulationValidationError, DashboardValidationError) as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(exc),

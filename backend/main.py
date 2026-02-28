@@ -7,7 +7,10 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from backend.conrollers.allocation_controller import router as prediction_router
+from backend.conrollers.dashboard_controller import router as dashboard_router
 from backend.repository.data_repository import DataRepository
+from backend.services.auth_service import AuthService
+from backend.services.dashboard_service import DashboardWorkflowService
 from backend.services.matching_service import AllocationOptimizationService
 from backend.services.prediction_service import AvailabilityPredictionService
 from backend.services.simulation_service import SimulationService
@@ -35,6 +38,14 @@ def create_app() -> FastAPI:
         settings=settings,
         prediction_service=prediction_service,
     )
+    auth_service = AuthService(settings=settings)
+    dashboard_service = DashboardWorkflowService(
+        repository=repository,
+        prediction_service=prediction_service,
+        matching_service=matching_service,
+        simulation_service=simulation_service,
+        settings=settings,
+    )
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
@@ -47,11 +58,14 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
     app.include_router(prediction_router)
+    app.include_router(dashboard_router)
 
     app.state.repository = repository
     app.state.prediction_service = prediction_service
     app.state.matching_service = matching_service
     app.state.simulation_service = simulation_service
+    app.state.auth_service = auth_service
+    app.state.dashboard_service = dashboard_service
 
     return app
 

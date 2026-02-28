@@ -77,6 +77,7 @@ class Settings:
     allocation_forecast_history_days: int
     simulation_cp_sat_workers: int
     simulation_solver_random_seed: int
+    admin_token: str
 
 
 @lru_cache(maxsize=1)
@@ -146,4 +147,5 @@ def get_settings() -> Settings:
         ),
         simulation_cp_sat_workers=_env_int("SIMULATION_CP_SAT_WORKERS", 1),
         simulation_solver_random_seed=_env_int("SIMULATION_SOLVER_RANDOM_SEED", 42),
+        admin_token=os.getenv("ADMIN_TOKEN", "admin-token").strip(),
     )

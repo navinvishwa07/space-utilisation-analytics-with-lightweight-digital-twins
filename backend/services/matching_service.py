@@ -347,6 +347,7 @@ class AllocationOptimizationService:
         requested_time_slot: str,
         idle_probability_threshold: Optional[float] = None,
         stakeholder_usage_cap: Optional[float] = None,
+        persist_outputs: bool = True,
     ) -> OptimizationResult:
         config = AllocationConfig(
             idle_probability_threshold=(
@@ -397,12 +398,13 @@ class AllocationOptimizationService:
                 fairness_metric=0.0,
                 unassigned_request_ids=[request.request_id for request in requests],
             )
-            persist_results(
-                repository=self._repository,
-                requested_date=requested_date,
-                forecasts=forecasts,
-                result=result,
-            )
+            if persist_outputs:
+                persist_results(
+                    repository=self._repository,
+                    requested_date=requested_date,
+                    forecasts=forecasts,
+                    result=result,
+                )
             logger.info(
                 "Allocation skipped due to empty inputs | rooms=%s | requests=%s",
                 len(rooms),
@@ -423,12 +425,13 @@ class AllocationOptimizationService:
             predictions=predictions,
             config=config,
         )
-        persist_results(
-            repository=self._repository,
-            requested_date=requested_date,
-            forecasts=forecasts,
-            result=result,
-        )
+        if persist_outputs:
+            persist_results(
+                repository=self._repository,
+                requested_date=requested_date,
+                forecasts=forecasts,
+                result=result,
+            )
         logger.info(
             (
                 "Optimization completed | objective_value=%.6f | fairness_metric=%.6f | "
