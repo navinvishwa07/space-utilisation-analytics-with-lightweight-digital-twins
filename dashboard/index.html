@@ -25,69 +25,85 @@
       --font-mono: 'IBM Plex Mono', monospace;
     }
 
-    body { background: var(--bg); color: var(--text); font-family: var(--font-sans); }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+    }
 
+    /* ======== LOGIN ======== */
     #loginScreen {
       min-height: 100vh;
+      display: flex;
       align-items: center;
       justify-content: center;
       position: relative;
       overflow: hidden;
     }
-    .login-bg-glow {
+    .login-glow {
       position: absolute; top: -200px; right: -200px;
       width: 600px; height: 600px; border-radius: 50%;
-      background: radial-gradient(circle, rgba(0,201,167,0.12) 0%, transparent 70%);
+      background: radial-gradient(circle, rgba(0,201,167,0.10) 0%, transparent 70%);
       pointer-events: none;
     }
     .login-wrap {
       position: relative; z-index: 1;
-      display: flex; flex-direction: column; align-items: center; gap: 32px;
-      padding: 20px;
-      width: 100%;
+      display: flex; flex-direction: column; align-items: center; gap: 28px;
     }
-    .logo-lockup { text-align: center; }
     .logo-mark {
-      display: block; font-family: var(--font-mono); font-size: 3rem;
-      font-weight: 500; color: var(--accent); letter-spacing: 0.15em;
+      font-family: var(--font-mono); font-size: 2.8rem;
+      font-weight: 500; color: var(--accent); letter-spacing: 0.2em;
+      display: block; text-align: center;
     }
     .logo-sub {
-      display: block; font-family: var(--font-mono); font-size: 0.65rem;
-      color: var(--muted); letter-spacing: 0.35em; text-transform: uppercase;
-      margin-top: 4px;
+      font-family: var(--font-mono); font-size: 0.62rem;
+      color: var(--muted); letter-spacing: 0.38em;
+      text-transform: uppercase; display: block;
+      text-align: center; margin-top: 2px;
     }
     .login-card {
       background: var(--surface); border: 1px solid var(--border);
-      border-radius: 14px; padding: 32px; width: 100%; max-width: 400px;
+      border-radius: 14px; padding: 32px; width: 400px;
       box-shadow: 0 40px 80px rgba(0,0,0,0.5);
     }
-    .login-card h2 {
-      font-size: 1.1rem; font-weight: 600; margin-bottom: 6px;
-    }
-    .login-card-desc {
-      color: var(--muted); font-size: 0.85rem; margin-bottom: 24px;
-    }
+    .login-card h2 { font-size: 1.05rem; font-weight: 600; margin-bottom: 6px; }
+    .login-card-desc { color: var(--muted); font-size: 0.82rem; margin-bottom: 22px; }
     .login-card label {
-      display: block; font-family: var(--font-mono); font-size: 0.72rem;
-      color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em;
+      display: block; font-family: var(--font-mono); font-size: 0.68rem;
+      color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em;
       margin-bottom: 6px;
     }
-    .login-card input {
+    .login-card input[type="password"] {
       width: 100%; background: var(--surface-2); border: 1px solid var(--border);
       color: var(--text); border-radius: 8px; padding: 10px 14px;
-      font-family: var(--font-mono); font-size: 0.9rem;
+      font-family: var(--font-mono); font-size: 0.9rem; margin-bottom: 0;
     }
     .login-card input:focus {
       outline: none; border-color: var(--accent);
       box-shadow: 0 0 0 3px var(--accent-dim);
     }
     .token-hint {
-      font-size: 0.75rem; color: var(--muted); margin: 6px 0 20px;
+      font-size: 0.71rem; color: var(--muted);
+      margin: 8px 0 20px; line-height: 1.5;
     }
     .token-hint code { color: var(--accent); font-family: var(--font-mono); }
-    .login-error { color: var(--error); font-size: 0.8rem; margin-top: 12px; min-height: 20px; }
+    #loginStatus {
+      color: var(--error); font-size: 0.78rem;
+      margin-top: 10px; min-height: 18px;
+    }
+    .login-help {
+      margin-top: 20px; padding-top: 16px;
+      border-top: 1px solid var(--border);
+      font-size: 0.73rem; color: var(--muted); line-height: 1.7;
+    }
+    .login-help p { margin-bottom: 8px; }
+    .login-help ol { padding-left: 16px; }
+    .login-help li { margin-bottom: 3px; }
+    .login-help strong { color: var(--text); }
 
-    #dashboardScreen { min-height: 100vh; grid-template-rows: auto 1fr; }
+    /* ======== DASHBOARD ======== */
+    #dashboardScreen { display: none; flex-direction: column; min-height: 100vh; }
 
     .topbar {
       background: var(--surface); border-bottom: 1px solid var(--border);
@@ -97,63 +113,52 @@
     }
     .topbar-brand { display: flex; align-items: center; gap: 14px; }
     .topbar-logo {
-      font-family: var(--font-mono); font-size: 1.1rem; font-weight: 500;
-      color: var(--accent); letter-spacing: 0.15em;
+      font-family: var(--font-mono); font-size: 1.1rem;
+      font-weight: 500; color: var(--accent); letter-spacing: 0.15em;
     }
-    .topbar-name { font-size: 0.82rem; color: var(--muted); }
+    .topbar-name { font-size: 0.8rem; color: var(--muted); }
     .admin-badge {
       display: flex; align-items: center; gap: 8px;
-      font-size: 0.8rem; color: var(--muted);
+      font-size: 0.78rem; color: var(--muted);
     }
     .status-dot {
-      width: 7px; height: 7px; border-radius: 50%; background: var(--ok);
-      box-shadow: 0 0 0 2px rgba(16,185,129,0.3);
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--ok); box-shadow: 0 0 0 2px rgba(16,185,129,0.3);
     }
-    .admin-badge a { color: var(--muted); text-decoration: underline; }
+    .admin-badge a { color: var(--muted); text-decoration: underline; cursor: pointer; }
     .admin-badge a:hover { color: var(--text); }
 
     .guide-banner {
-      background: rgba(0, 77, 63, 0.4);
+      background: rgba(0,77,63,0.35);
       border-bottom: 1px solid var(--border);
-      padding: 8px 24px;
-      display: flex !important;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-      font-family: var(--font-mono);
-      font-size: 0.73rem;
+      padding: 7px 24px;
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+      font-family: var(--font-mono); font-size: 0.72rem;
     }
     .guide-step { color: var(--accent); font-weight: 500; }
     .guide-arrow { color: var(--border); }
-    .guide-note { color: var(--muted); font-size: 0.68rem; margin-left: 4px; }
+    .guide-note { color: var(--muted); font-size: 0.67rem; margin-left: 4px; }
 
     .content-grid {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) 340px;
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: 24px;
-      width: 100%;
-      gap: 20px;
-      align-items: start;
+      display: grid; grid-template-columns: 1fr 320px;
+      gap: 20px; padding: 20px 24px;
+      max-width: 1400px; margin: 0 auto; width: 100%;
     }
 
     .panel {
       background: var(--surface); border: 1px solid var(--border);
-      border-radius: 12px; padding: 20px; margin-bottom: 16px;
+      border-radius: 12px; padding: 18px; margin-bottom: 16px;
     }
     .panel:last-child { margin-bottom: 0; }
     .panel-title {
-      font-size: 0.72rem; font-family: var(--font-mono); text-transform: uppercase;
-      letter-spacing: 0.12em; color: var(--muted); margin-bottom: 16px;
-      padding-bottom: 12px; border-bottom: 1px solid var(--border);
+      font-size: 0.68rem; font-family: var(--font-mono);
+      text-transform: uppercase; letter-spacing: 0.12em;
+      color: var(--muted); margin-bottom: 6px;
+      padding-bottom: 10px; border-bottom: 1px solid var(--border);
     }
     .panel-desc {
-      font-size: 0.76rem;
-      color: var(--muted);
-      margin: -8px 0 16px;
-      line-height: 1.6;
-      font-family: var(--font-sans);
+      font-size: 0.75rem; color: var(--muted);
+      margin: 0 0 14px; line-height: 1.6; font-family: var(--font-sans);
     }
     .panel-desc strong { color: var(--text); font-weight: 500; }
 
@@ -163,622 +168,582 @@
       border-radius: 10px; padding: 12px 16px; margin-bottom: 16px;
     }
     .info-box-title {
-      font-family: var(--font-mono); font-size: 0.76rem;
-      color: var(--accent); cursor: pointer;
-      list-style: none; user-select: none;
+      font-family: var(--font-mono); font-size: 0.75rem;
+      color: var(--accent); cursor: pointer; list-style: none; user-select: none;
     }
     .info-box-title::-webkit-details-marker { display: none; }
     details[open] .info-box-title { margin-bottom: 12px; }
-    .info-box-body p {
-      font-size: 0.78rem; color: var(--muted); line-height: 1.7; margin-bottom: 10px;
-    }
+    .info-box-body p { font-size: 0.77rem; color: var(--muted); line-height: 1.7; margin-bottom: 10px; }
+    .info-box-body strong { color: var(--text); }
     .info-table { width: 100%; border-collapse: collapse; }
     .info-table td {
-      font-size: 0.74rem; padding: 6px 10px;
+      font-size: 0.73rem; padding: 5px 8px;
       border-bottom: 1px solid var(--border);
       font-family: var(--font-mono);
     }
     .info-table tr:last-child td { border-bottom: none; }
     .info-table td:first-child { color: var(--accent); width: 80px; white-space: nowrap; }
-    .info-table td:last-child  { color: var(--muted); }
+    .info-table td:last-child { color: var(--muted); }
 
     .controls-grid {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-      gap: 12px; margin-bottom: 16px;
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 12px; margin-bottom: 14px;
     }
     .field label {
-      display: block; font-family: var(--font-mono); font-size: 0.68rem;
-      color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em;
-      margin-bottom: 6px;
+      display: block; font-family: var(--font-mono); font-size: 0.65rem;
+      color: var(--muted); text-transform: uppercase;
+      letter-spacing: 0.08em; margin-bottom: 6px;
     }
     .field input, .field select {
       width: 100%; background: var(--surface-2); border: 1px solid var(--border);
-      color: var(--text); border-radius: 6px; padding: 8px 12px;
-      font-family: var(--font-mono); font-size: 0.85rem;
+      color: var(--text); border-radius: 6px; padding: 8px 10px;
+      font-family: var(--font-mono); font-size: 0.82rem;
     }
     .field input:focus, .field select:focus {
-      outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-dim);
+      outline: none; border-color: var(--accent);
+      box-shadow: 0 0 0 2px var(--accent-dim);
     }
     .toggle-field label {
       display: flex; align-items: center; gap: 8px;
-      font-family: var(--font-sans); font-size: 0.85rem; color: var(--text);
-      text-transform: none; letter-spacing: 0; cursor: pointer;
-      margin-top: 24px;
+      font-family: var(--font-sans); font-size: 0.83rem;
+      color: var(--text); text-transform: none;
+      letter-spacing: 0; cursor: pointer;
     }
 
     .action-row { display: flex; gap: 10px; flex-wrap: wrap; }
-    .demo-hint {
-      margin-top: 10px; font-size: 0.75rem; color: var(--muted); font-family: var(--font-mono);
-      min-height: 1.2em;
-    }
 
     button {
-      font-family: var(--font-sans);
-      font-size: 0.85rem;
-      padding: 9px 18px;
-      border: none;
-      border-radius: 6px;
+      font-family: var(--font-sans); font-size: 0.84rem; font-weight: 500;
+      padding: 8px 18px; border: none; border-radius: 6px;
       cursor: pointer;
-      transition: background 120ms, transform 80ms, opacity 120ms;
-      font-weight: 500;
+      transition: opacity 120ms, transform 80ms, background 120ms;
     }
-    button:hover { transform: translateY(-1px); }
-    button:active { transform: translateY(0); }
-    button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
-
-    .btn-primary { background: var(--accent); color: #000; font-weight: 600; }
-    .btn-primary:hover { background: #00b597; }
+    button:hover:not(:disabled) { transform: translateY(-1px); opacity: 0.9; }
+    button:active:not(:disabled) { transform: translateY(0); }
+    button:disabled { opacity: 0.38; cursor: not-allowed; transform: none !important; }
+    .btn-primary { background: var(--accent); color: #000; }
     .btn-secondary { background: var(--blue); color: #fff; }
-    .btn-secondary:hover { background: #326fd4; }
     .btn-ghost {
-      background: transparent;
+      background: transparent; color: var(--text);
       border: 1px solid var(--border);
-      color: var(--text);
     }
-    .btn-ghost:hover { background: var(--surface-2); }
-    #loginBtn { width: 100%; }
+    .btn-ghost:hover:not(:disabled) { background: var(--surface-2); opacity: 1; }
 
     .table-wrap {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      overflow: hidden;
-      overflow-x: auto;
+      border: 1px solid var(--border); border-radius: 8px;
+      overflow: hidden; overflow-x: auto;
     }
-    table { width: 100%; border-collapse: collapse; min-width: 600px; }
+    table { width: 100%; border-collapse: collapse; min-width: 460px; }
     th {
       background: var(--surface-2); color: var(--muted);
-      font-family: var(--font-mono); font-size: 0.72rem;
-      text-transform: uppercase; letter-spacing: 0.08em; padding: 10px 14px;
-      text-align: left;
+      font-family: var(--font-mono); font-size: 0.65rem;
+      text-transform: uppercase; letter-spacing: 0.08em;
+      padding: 9px 12px; text-align: left; white-space: nowrap;
     }
     td {
-      color: var(--text); font-family: var(--font-mono); font-size: 0.82rem;
-      padding: 10px 14px; border-bottom: 1px solid var(--border);
+      color: var(--text); font-family: var(--font-mono); font-size: 0.79rem;
+      padding: 8px 12px; border-bottom: 1px solid var(--border);
     }
     tr:last-child td { border-bottom: none; }
     tr:hover td { background: var(--surface-2); }
 
     .metrics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .metric-tile {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 16px;
-      position: relative;
-      overflow: hidden;
-      min-height: 94px;
+      background: var(--surface-2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 14px; position: relative; overflow: hidden;
     }
     .metric-tile::before {
-      content:'';
-      position:absolute;
-      left:0;
-      top:0;
-      bottom:0;
-      width:3px;
-      background: var(--accent);
+      content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+      width: 3px; background: var(--accent);
     }
     .metric-label {
-      display: block;
-      font-family: var(--font-mono);
-      font-size: 0.65rem;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: var(--muted);
+      display: block; font-family: var(--font-mono); font-size: 0.60rem;
+      text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted);
+      line-height: 1.4;
     }
     .metric-value {
-      display: block;
-      font-family: var(--font-mono);
-      font-size: 1.4rem;
-      color: var(--accent);
-      font-weight: 500;
-      margin-top: 8px;
+      display: block; font-family: var(--font-mono); font-size: 1.2rem;
+      color: var(--accent); font-weight: 500; margin-top: 8px;
     }
 
-    .activity-log {
-      max-height: 280px;
-      overflow-y: auto;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 8px 12px;
-      background: var(--surface-2);
-    }
+    .activity-log { max-height: 300px; overflow-y: auto; }
     .log-entry {
-      display: grid;
-      grid-template-columns: 58px 80px 1fr;
-      gap: 6px;
-      padding: 6px 4px;
-      border-bottom: 1px solid var(--border);
-      font-size: 0.72rem;
-      align-items: start;
-      font-family: var(--font-mono);
+      display: grid; grid-template-columns: 58px 76px 1fr;
+      gap: 6px; padding: 5px 2px; border-bottom: 1px solid var(--border);
+      font-size: 0.71rem; align-items: start;
     }
     .log-entry:last-child { border-bottom: none; }
-    .log-time { color: var(--muted); }
-    .log-action { color: var(--accent); }
-    .log-detail {
-      color: var(--text);
-      word-break: break-word;
-      white-space: normal;
-      line-height: 1.5;
-    }
+    .log-time { color: var(--muted); font-family: var(--font-mono); }
+    .log-action { color: var(--accent); font-family: var(--font-mono); }
+    .log-detail { color: var(--text); font-family: var(--font-mono); word-break: break-word; line-height: 1.5; }
     .log-entry.error .log-action { color: var(--error); }
-    .log-entry.warn .log-action { color: var(--warn); }
-    .activity-log::-webkit-scrollbar { width: 5px; }
-    .activity-log::-webkit-scrollbar-track { background: var(--surface-2); }
-    .activity-log::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    .log-entry.warn  .log-action { color: var(--warn); }
+    .activity-log::-webkit-scrollbar { width: 4px; }
+    .activity-log::-webkit-scrollbar-track { background: var(--surface); }
+    .activity-log::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
     .right-col .panel { margin-bottom: 16px; }
     .right-col .panel:last-child { margin-bottom: 0; }
 
     @media (max-width: 900px) {
-      .content-grid { grid-template-columns: 1fr; padding: 16px; }
-      .topbar { padding: 0 14px; }
-      .guide-banner { padding: 7px 14px; }
-      .topbar-name { display: none; }
-      .metrics-grid { grid-template-columns: 1fr; }
-      .toggle-field label { margin-top: 0; }
-      .log-entry { grid-template-columns: 52px 74px 1fr; }
+      .content-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
 
-  <div id="loginScreen" style="display:flex">
-    <div class="login-bg-glow"></div>
-    <div class="login-wrap">
-      <div class="logo-lockup">
-        <span class="logo-mark">SIET</span>
-        <span class="logo-sub">ADMIN CONSOLE</span>
-      </div>
-      <div class="login-card">
-        <h2>Authentication Required</h2>
-        <p class="login-card-desc">Enter your admin token to access the digital twin.</p>
-        <label for="adminToken">Admin Token</label>
-        <input id="adminToken" type="password" placeholder="admin-token" autocomplete="current-password" />
-        <p class="token-hint">Default: <code>admin-token</code> — set ADMIN_TOKEN in <code>.env</code> to change</p>
-        <button id="loginBtn" class="btn-primary">Login</button>
-        <p id="loginStatus" class="login-error"></p>
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="login-glow"></div>
+  <div class="login-wrap">
+    <div>
+      <span class="logo-mark">SIET</span>
+      <span class="logo-sub">Admin Console</span>
+    </div>
+    <div class="login-card">
+      <h2>Authentication Required</h2>
+      <p class="login-card-desc">Enter your admin token to access the digital twin.</p>
+      <label for="adminToken">Admin Token</label>
+      <input id="adminToken" type="password" placeholder="admin-token" autocomplete="current-password" />
+      <p class="token-hint">Default: <code>admin-token</code> — set <code>ADMIN_TOKEN</code> in <code>.env</code> to change</p>
+      <button id="loginBtn" class="btn-primary" style="width:100%">Login</button>
+      <p id="loginStatus"></p>
+      <div class="login-help">
+        <p>After login, a 5-step workflow panel is revealed:</p>
+        <ol>
+          <li><strong>Predict</strong> — ML scores every room's idle probability</li>
+          <li><strong>Allocate</strong> — CP-SAT assigns rooms to pending requests</li>
+          <li><strong>Simulate</strong> — test policy changes without saving</li>
+          <li><strong>Approve</strong> — commit the allocation to the database</li>
+          <li><strong>Metrics</strong> — before vs after utilisation comparison</li>
+        </ol>
       </div>
     </div>
   </div>
+</div>
 
-  <div id="dashboardScreen" style="display:none">
-    <header class="topbar">
-      <div class="topbar-brand">
-        <span class="topbar-logo">SIET</span>
-        <span class="topbar-name">Space Utilisation Digital Twin</span>
-      </div>
-      <div id="adminBadge" class="admin-badge" style="display:none">
-        <span class="status-dot"></span>
-        <span>admin</span>
-        <a id="logoutLink" href="#">Logout</a>
-      </div>
-    </header>
-    <div class="guide-banner">
-      <span class="guide-step">① Login</span>
-      <span class="guide-arrow">→</span>
-      <span class="guide-step">② Predict</span>
-      <span class="guide-arrow">→</span>
-      <span class="guide-step">③ Allocate</span>
-      <span class="guide-arrow">→</span>
-      <span class="guide-step">④ Simulate</span>
-      <span class="guide-arrow">→</span>
-      <span class="guide-step">⑤ Approve</span>
-      <span class="guide-note"> — run each step in order, top to bottom</span>
+<!-- DASHBOARD -->
+<div id="dashboardScreen">
+
+  <header class="topbar">
+    <div class="topbar-brand">
+      <span class="topbar-logo">SIET</span>
+      <span class="topbar-name">Space Utilisation Digital Twin</span>
     </div>
-
-    <div class="content-grid">
-      <div class="left-col">
-        <details class="info-box">
-          <summary class="info-box-title">▸ What is this dashboard?</summary>
-          <div class="info-box-body">
-            <p>The SIET Digital Twin predicts which rooms will be idle, then assigns them to
-            stakeholders who have submitted booking requests — reducing wasted space.</p>
-            <table class="info-table">
-              <tr><td>Predict</td><td>ML model scores every room's idle probability for the selected slot</td></tr>
-              <tr><td>Allocate</td><td>Optimisation solver assigns rooms to pending requests, saved as a draft</td></tr>
-              <tr><td>Simulate</td><td>What-if test — change parameters and see the impact without touching live data</td></tr>
-              <tr><td>Approve</td><td>Commits the draft to the database and marks requests as ALLOCATED</td></tr>
-              <tr><td>Metrics</td><td>Shows baseline vs simulated utilisation rates side by side</td></tr>
-            </table>
-          </div>
-        </details>
-        <section class="panel">
-          <h3 class="panel-title">Workflow Controls</h3>
-          <p class="panel-desc">Set a date and time slot, then run Predict → Allocate → Approve in order.</p>
-          <div class="controls-grid">
-            <div class="field">
-              <label for="targetDate">Date</label>
-              <input id="targetDate" type="date" />
-            </div>
-            <div class="field">
-              <label for="timeSlot">Time Slot</label>
-              <select id="timeSlot">
-                <option>09-11</option>
-                <option>11-13</option>
-                <option>14-16</option>
-                <option>16-18</option>
-              </select>
-            </div>
-            <div class="field">
-              <label for="idleThreshold">Idle Threshold</label>
-              <input id="idleThreshold" type="number" min="0" max="1" step="0.01" value="0.25" title="Only rooms with idle probability above this value are eligible (0.25 = 25%)" />
-            </div>
-            <div class="field">
-              <label for="usageCap">Usage Cap</label>
-              <input id="usageCap" type="number" min="0.01" max="1" step="0.01" value="0.60" />
-            </div>
-          </div>
-          <div class="action-row">
-            <button id="predictBtn" class="btn-primary">Predict</button>
-            <button id="allocateBtn" class="btn-primary">Allocate</button>
-            <button id="approveBtn" class="btn-ghost">Approve</button>
-          </div>
-          <div id="demoHint" class="demo-hint"></div>
-        </section>
-
-        <section class="panel">
-          <h3 class="panel-title">Simulation</h3>
-          <p class="panel-desc">Test "what if" policy changes in memory — nothing is saved until you click Approve.</p>
-          <div class="controls-grid">
-            <div class="field toggle-field">
-              <label>
-                <input id="enableOverrides" type="checkbox" checked />
-                Enable Temporary Overrides
-              </label>
-            </div>
-            <div class="field">
-              <label for="priorityWeight">Priority Weight</label>
-              <input id="priorityWeight" type="number" min="0.01" step="0.01" value="1.20" />
-            </div>
-          </div>
-          <div class="action-row">
-            <button id="simulateBtn" class="btn-secondary">Run Simulation</button>
-            <button id="refreshMetricsBtn" class="btn-ghost">Refresh Metrics</button>
-          </div>
-        </section>
-
-        <section class="panel">
-          <h3 class="panel-title">Idle Probability - All Rooms</h3>
-          <p class="panel-desc">Higher idle probability means the room is more likely to be empty — and a better candidate to reallocate.</p>
-          <div class="table-wrap">
-            <table id="predictionTable">
-              <thead>
-                <tr>
-                  <th>Room</th><th>Date</th><th>Slot</th>
-                  <th>Idle Prob</th><th>Confidence</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
-          </div>
-        </section>
-
-        <section class="panel">
-          <h3 class="panel-title">Allocation Results</h3>
-          <p class="panel-desc">Optimised room assignments. SATISFIED = room found. UNASSIGNED = no eligible room available.</p>
-          <div class="table-wrap">
-            <table id="allocationTable">
-              <thead>
-                <tr>
-                  <th>Room</th><th>Stakeholder</th><th>Slot</th>
-                  <th>Score</th><th>Priority</th><th>Status</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
-          </div>
-        </section>
-      </div>
-
-      <aside class="right-col">
-        <section class="panel">
-          <h3 class="panel-title">Metrics</h3>
-          <p class="panel-desc">Compares utilisation before and after. Run Simulate first, then Refresh Metrics.</p>
-          <div class="metrics-grid">
-            <div class="metric-tile">
-              <span class="metric-label">Baseline Idle Rate</span>
-              <span id="mBaseline" class="metric-value">-</span>
-            </div>
-            <div class="metric-tile">
-              <span class="metric-label">Simulated Idle Rate</span>
-              <span id="mSimulated" class="metric-value">-</span>
-            </div>
-            <div class="metric-tile">
-              <span class="metric-label">Efficiency Score</span>
-              <span id="mEfficiency" class="metric-value">-</span>
-            </div>
-            <div class="metric-tile">
-              <span class="metric-label">Utilisation Delta</span>
-              <span id="mDelta" class="metric-value">-</span>
-            </div>
-          </div>
-        </section>
-
-        <section class="panel panel-log">
-          <h3 class="panel-title">Activity Log</h3>
-          <p class="panel-desc">Every action this session — newest at top.</p>
-          <div id="activityLog" class="activity-log"></div>
-        </section>
-      </aside>
+    <div id="adminBadge" class="admin-badge" style="display:none">
+      <span class="status-dot"></span>
+      <span>admin</span>
+      <a id="logoutLink">Logout</a>
     </div>
+  </header>
+
+  <div class="guide-banner">
+    <span class="guide-step">① Login</span>
+    <span class="guide-arrow">→</span>
+    <span class="guide-step">② Predict</span>
+    <span class="guide-arrow">→</span>
+    <span class="guide-step">③ Allocate</span>
+    <span class="guide-arrow">→</span>
+    <span class="guide-step">④ Simulate</span>
+    <span class="guide-arrow">→</span>
+    <span class="guide-step">⑤ Approve</span>
+    <span class="guide-note"> — run each step in order, top to bottom</span>
   </div>
 
-  <script>
-    const state = { bearerToken: '' };
+  <div class="content-grid">
 
-    const loginScreen = document.getElementById('loginScreen');
-    const dashScreen = document.getElementById('dashboardScreen');
-    const loginStatus = document.getElementById('loginStatus');
-    const activityLog = document.getElementById('activityLog');
-    const predBody = document.querySelector('#predictionTable tbody');
-    const allocBody = document.querySelector('#allocationTable tbody');
+    <div class="left-col">
 
-    document.getElementById('targetDate').value = new Date().toISOString().slice(0, 10);
+      <details class="info-box">
+        <summary class="info-box-title">▸ What is this dashboard?</summary>
+        <div class="info-box-body">
+          <p>The SIET Digital Twin predicts which rooms will be idle, then assigns them to
+          stakeholders who have submitted booking requests — reducing wasted space.</p>
+          <table class="info-table">
+            <tr><td>Predict</td><td>ML model scores every room's idle probability for the selected slot</td></tr>
+            <tr><td>Allocate</td><td>Optimisation solver assigns rooms to pending requests, saved as a draft</td></tr>
+            <tr><td>Simulate</td><td>What-if test — change parameters without touching live data</td></tr>
+            <tr><td>Approve</td><td>Commits the draft to the database, marks requests ALLOCATED</td></tr>
+            <tr><td>Metrics</td><td>Shows baseline vs simulated utilisation rates side by side</td></tr>
+          </table>
+        </div>
+      </details>
 
-    function showLogin() {
-      loginScreen.style.display = 'flex';
-      dashScreen.style.display = 'none';
-      document.getElementById('adminBadge').style.display = 'none';
-    }
+      <div class="panel">
+        <h3 class="panel-title">Workflow Controls</h3>
+        <p class="panel-desc">Set a date and time slot, then click <strong>Predict → Allocate → Approve</strong> in order.</p>
+        <div class="controls-grid">
+          <div class="field">
+            <label for="targetDate">Date</label>
+            <input id="targetDate" type="date" title="The date you want to predict and allocate rooms for" />
+          </div>
+          <div class="field">
+            <label for="timeSlot">Time Slot</label>
+            <select id="timeSlot" title="The 2-hour block to allocate (e.g. 09-11 = 9am to 11am)">
+              <option>09-11</option>
+              <option>11-13</option>
+              <option>14-16</option>
+              <option>16-18</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="idleThreshold">Idle Threshold</label>
+            <input id="idleThreshold" type="number" min="0" max="1" step="0.01" value="0.25"
+              title="Only rooms with idle probability above this value are eligible (0.25 = 25%)" />
+          </div>
+          <div class="field">
+            <label for="usageCap">Usage Cap</label>
+            <input id="usageCap" type="number" min="0.01" max="1" step="0.01" value="0.60"
+              title="Max share of total requests any one stakeholder can receive (0.60 = 60%)" />
+          </div>
+        </div>
+        <div class="action-row">
+          <button id="predictBtn" class="btn-primary">Predict</button>
+          <button id="allocateBtn" class="btn-primary">Allocate</button>
+          <button id="approveBtn" class="btn-ghost">Approve</button>
+        </div>
+        <p id="contextHint" style="font-family:var(--font-mono);font-size:0.72rem;color:var(--muted);margin-top:10px;"></p>
+      </div>
 
-    function showDashboard() {
-      loginScreen.style.display = 'none';
-      dashScreen.style.display = 'grid';
-      document.getElementById('adminBadge').style.display = 'flex';
-    }
+      <div class="panel">
+        <h3 class="panel-title">Simulation</h3>
+        <p class="panel-desc">Test "what if" policy changes in memory — nothing is saved until you click Approve.</p>
+        <div class="controls-grid">
+          <div class="field toggle-field">
+            <label>
+              <input id="enableOverrides" type="checkbox" checked />
+              Enable Temporary Overrides
+            </label>
+          </div>
+          <div class="field">
+            <label for="priorityWeight">Priority Weight</label>
+            <input id="priorityWeight" type="number" min="0.01" step="0.01" value="1.20"
+              title="Multiplier applied to all stakeholder priority weights during simulation (1.20 = 20% boost)" />
+          </div>
+        </div>
+        <div class="action-row">
+          <button id="simulateBtn" class="btn-secondary">Run Simulation</button>
+          <button id="refreshMetricsBtn" class="btn-ghost">Refresh Metrics</button>
+        </div>
+      </div>
 
-    function addLog(action, detail = '', level = 'ok') {
-      const time = new Date().toTimeString().slice(0, 8);
-      const entry = document.createElement('div');
-      entry.className = `log-entry${level !== 'ok' ? ' ' + level : ''}`;
-      entry.innerHTML = `
-        <span class="log-time">${time}</span>
-        <span class="log-action">${String(action).toUpperCase()}</span>
-        <span class="log-detail">${detail}</span>`;
-      activityLog.prepend(entry);
-    }
+      <div class="panel">
+        <h3 class="panel-title">Idle Probability — All Rooms</h3>
+        <p class="panel-desc">Higher idle probability = room more likely to be empty = better candidate to reallocate.</p>
+        <div class="table-wrap">
+          <table id="predictionTable">
+            <thead>
+              <tr>
+                <th>Room</th><th>Date</th><th>Slot</th>
+                <th>Idle Prob</th><th>Confidence</th>
+              </tr>
+            </thead>
+            <tbody id="predBody"></tbody>
+          </table>
+        </div>
+      </div>
 
-    function numOrNull(v) {
-      const n = Number(v);
-      return (v === '' || isNaN(n)) ? null : n;
-    }
+      <div class="panel">
+        <h3 class="panel-title">Allocation Results</h3>
+        <p class="panel-desc">SATISFIED = room assigned. UNASSIGNED = no eligible room found for that request.</p>
+        <div class="table-wrap">
+          <table id="allocationTable">
+            <thead>
+              <tr>
+                <th>Room</th><th>Stakeholder</th><th>Slot</th>
+                <th>Score</th><th>Priority</th><th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="allocBody"></tbody>
+          </table>
+        </div>
+      </div>
 
-    async function api(path, opts = {}) {
-      const headers = { 'Content-Type': 'application/json', ...(opts.headers || {}) };
-      if (state.bearerToken) headers.Authorization = `Bearer ${state.bearerToken}`;
-      const res = await fetch(path, { ...opts, headers });
-      if (!res.ok) {
-        let msg = `HTTP ${res.status}`;
-        try {
-          const err = await res.json();
-          msg = err.detail || err.message || msg;
-        } catch (_) {
-          msg = res.statusText || msg;
-        }
-        throw new Error(msg);
-      }
-      if (res.status === 204) return null;
-      try {
-        return await res.json();
-      } catch (_) {
-        return null;
-      }
-    }
+    </div>
 
-    function setEmptyState(tbody, message) {
-      tbody.innerHTML = '';
-      const tr = document.createElement('tr');
-      const td = document.createElement('td');
-      td.colSpan = 10;
-      td.style.cssText = 'text-align:center;color:var(--muted);font-family:var(--font-mono);font-size:0.78rem;padding:28px;';
-      td.textContent = message;
+    <aside class="right-col">
+
+      <div class="panel">
+        <h3 class="panel-title">Metrics</h3>
+        <p class="panel-desc">Run Simulate first, then Refresh Metrics to see the before/after comparison.</p>
+        <div class="metrics-grid">
+          <div class="metric-tile">
+            <span class="metric-label">Baseline Idle Rate</span>
+            <span class="metric-value" id="mBaseline">—</span>
+          </div>
+          <div class="metric-tile">
+            <span class="metric-label">Simulated Idle Rate</span>
+            <span class="metric-value" id="mSimulated">—</span>
+          </div>
+          <div class="metric-tile">
+            <span class="metric-label">Efficiency Score</span>
+            <span class="metric-value" id="mEfficiency">—</span>
+          </div>
+          <div class="metric-tile">
+            <span class="metric-label">Utilisation Delta</span>
+            <span class="metric-value" id="mDelta">—</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3 class="panel-title">Activity Log</h3>
+        <p class="panel-desc">Every action this session — newest at top.</p>
+        <div class="activity-log" id="activityLog"></div>
+      </div>
+
+    </aside>
+
+  </div>
+</div>
+
+<script>
+var state = { token: '' };
+
+var loginScreen  = document.getElementById('loginScreen');
+var dashScreen   = document.getElementById('dashboardScreen');
+var loginStatus  = document.getElementById('loginStatus');
+var activityLog  = document.getElementById('activityLog');
+var adminBadge   = document.getElementById('adminBadge');
+var contextHint  = document.getElementById('contextHint');
+var predBody     = document.getElementById('predBody');
+var allocBody    = document.getElementById('allocBody');
+
+function showLogin() {
+  loginScreen.style.display = 'flex';
+  dashScreen.style.display  = 'none';
+  adminBadge.style.display  = 'none';
+}
+
+function showDashboard() {
+  loginScreen.style.display = 'none';
+  dashScreen.style.display  = 'flex';
+  adminBadge.style.display  = 'flex';
+}
+
+function addLog(action, detail, level) {
+  level = level || 'ok';
+  var time  = new Date().toTimeString().slice(0, 8);
+  var entry = document.createElement('div');
+  entry.className = 'log-entry' + (level !== 'ok' ? ' ' + level : '');
+  entry.innerHTML =
+    '<span class="log-time">'   + time + '</span>' +
+    '<span class="log-action">' + String(action).toUpperCase() + '</span>' +
+    '<span class="log-detail">' + String(detail || '') + '</span>';
+  activityLog.prepend(entry);
+}
+
+function fmt(v, decimals) {
+  var n = Number(v);
+  return isNaN(n) ? '—' : n.toFixed(decimals);
+}
+
+function fmtCell(v) {
+  if (v === null || v === undefined) return '—';
+  if (typeof v === 'number') {
+    if (v % 1 === 0) return String(Math.round(v));
+    return v.toFixed(4);
+  }
+  return String(v);
+}
+
+function numOrNull(id) {
+  var el = document.getElementById(id);
+  if (!el) return null;
+  var n = Number(el.value);
+  return (el.value === '' || isNaN(n)) ? null : n;
+}
+
+function setEmptyState(tbody, msg) {
+  tbody.innerHTML = '';
+  var tr = document.createElement('tr');
+  var td = document.createElement('td');
+  td.colSpan = 10;
+  td.style.cssText = 'text-align:center;color:var(--muted);font-family:var(--font-mono);font-size:0.78rem;padding:28px;';
+  td.textContent = msg;
+  tr.appendChild(td);
+  tbody.appendChild(tr);
+}
+
+function fillTable(tbody, rows, cols) {
+  tbody.innerHTML = '';
+  if (!rows || rows.length === 0) {
+    setEmptyState(tbody, 'No results returned.');
+    return;
+  }
+  rows.forEach(function(row) {
+    var tr = document.createElement('tr');
+    cols.forEach(function(col) {
+      var td = document.createElement('td');
+      td.textContent = fmtCell(row[col]);
       tr.appendChild(td);
-      tbody.appendChild(tr);
-    }
-
-    function formatCell(v, col) {
-      if (v === null || v === undefined) return '—';
-      if (typeof v === 'number') {
-        if (Number.isInteger(v) || (col === 'room_id' && v % 1 === 0)) {
-          return String(Math.round(v));
-        }
-        return v.toFixed(4);
-      }
-      return String(v);
-    }
-
-    function fillTable(tbody, rows, cols) {
-      tbody.innerHTML = '';
-      if (!rows || rows.length === 0) {
-        setEmptyState(tbody, 'No results.');
-        return;
-      }
-      rows.forEach(row => {
-        const tr = document.createElement('tr');
-        cols.forEach(col => {
-          const td = document.createElement('td');
-          td.textContent = formatCell(row[col], col);
-          tr.appendChild(td);
-        });
-        tbody.appendChild(tr);
-      });
-    }
-
-    function fillMetrics(m) {
-      console.log('[SIET] /metrics response:', JSON.stringify(m, null, 2));
-
-      function fmt(v, decimals) {
-        const n = Number(v);
-        return Number.isNaN(n) ? '—' : n.toFixed(decimals);
-      }
-
-      const baseline = fmt(m.baseline_idle_activation_rate, 4);
-      const simulated = fmt(m.simulated_idle_activation_rate, 4);
-      const efficiency = fmt(m.allocation_efficiency_score, 4);
-      const delta = fmt(m.utilization_delta_percentage, 2);
-
-      document.getElementById('mBaseline').textContent = baseline;
-      document.getElementById('mSimulated').textContent = simulated;
-      document.getElementById('mEfficiency').textContent = efficiency;
-      document.getElementById('mDelta').textContent = delta === '—' ? '—' : `${delta}%`;
-    }
-
-    async function loadDemoContext() {
-      try {
-        const ctx = await api('/demo_context');
-        if (ctx.default_date) document.getElementById('targetDate').value = ctx.default_date;
-        if (ctx.default_time_slot) document.getElementById('timeSlot').value = ctx.default_time_slot;
-        const hint = `pending windows: ${(ctx.pending_windows || []).length}`;
-        document.getElementById('demoHint').textContent = hint;
-        addLog('CONTEXT', `date=${ctx.default_date} slot=${ctx.default_time_slot} pending=${ctx.pending_request_count}`);
-      } catch (e) {
-        addLog('CONTEXT', e.message, 'warn');
-      }
-    }
-
-    function withLoading(btn, fn) {
-      return async function() {
-        const orig = btn.textContent;
-        btn.disabled = true;
-        btn.textContent = `${orig}…`;
-        try {
-          await fn();
-        } catch (e) {
-          console.error('[SIET] handler error:', e);
-        } finally {
-          btn.disabled = false;
-          btn.textContent = orig;
-        }
-      };
-    }
-
-    const loginBtn = document.getElementById('loginBtn');
-    loginBtn.addEventListener('click', withLoading(loginBtn, async () => {
-      loginStatus.textContent = '';
-      try {
-        const r = await api('/login', {
-          method: 'POST',
-          body: JSON.stringify({ admin_token: document.getElementById('adminToken').value.trim() })
-        });
-        state.bearerToken = r.access_token;
-        showDashboard();
-        setEmptyState(predBody, '← Run Predict to score all rooms by idle probability');
-        setEmptyState(allocBody, '← Run Allocate to assign rooms to pending requests');
-        addLog('LOGIN', 'authenticated - session token issued');
-        await loadDemoContext();
-      } catch (e) {
-        loginStatus.textContent = String(e.message || e);
-      }
-    }));
-
-    document.getElementById('logoutLink').addEventListener('click', e => {
-      e.preventDefault();
-      state.bearerToken = '';
-      showLogin();
     });
+    tbody.appendChild(tr);
+  });
+}
 
-    const predictBtn = document.getElementById('predictBtn');
-    predictBtn.addEventListener('click', withLoading(predictBtn, async () => {
-      try {
-        const r = await api('/predict', {
-          method: 'POST',
-          body: JSON.stringify({
-            date: document.getElementById('targetDate').value,
-            time_slot: document.getElementById('timeSlot').value
-          })
-        });
-        fillTable(predBody, r.predictions, [
-          'room_id', 'date', 'time_slot', 'predicted_idle_probability', 'confidence_score'
-        ]);
-        addLog('PREDICT', `${r.predictions.length} rooms processed`);
-      } catch (e) { addLog('PREDICT', String(e.message || e), 'error'); }
-    }));
+function fillMetrics(m) {
+  console.log('[SIET] /metrics response:', m);
+  document.getElementById('mBaseline').textContent   = fmt(m.baseline_idle_activation_rate, 4);
+  document.getElementById('mSimulated').textContent  = fmt(m.simulated_idle_activation_rate, 4);
+  document.getElementById('mEfficiency').textContent = fmt(m.allocation_efficiency_score, 4);
+  document.getElementById('mDelta').textContent      = fmt(m.utilization_delta_percentage, 2) + '%';
+}
 
-    const allocateBtn = document.getElementById('allocateBtn');
-    allocateBtn.addEventListener('click', withLoading(allocateBtn, async () => {
-      try {
-        const r = await api('/allocate', {
-          method: 'POST',
-          body: JSON.stringify({
-            requested_date: document.getElementById('targetDate').value,
-            requested_time_slot: document.getElementById('timeSlot').value,
-            idle_probability_threshold: numOrNull(document.getElementById('idleThreshold').value),
-            stakeholder_usage_cap: numOrNull(document.getElementById('usageCap').value)
-          })
-        });
-        fillTable(allocBody, r.allocations, [
-          'room_id', 'stakeholder', 'time_slot', 'allocation_score', 'priority_weight', 'constraint_status'
-        ]);
-        addLog('ALLOCATE',
-          `obj=${Number(r.objective_value).toFixed(4)} ` +
-          `fairness=${Number(r.fairness_metric).toFixed(4)} ` +
-          `(${(r.allocations || []).length} assignments)`
-        );
-      } catch (e) { addLog('ALLOCATE', String(e.message || e), 'error'); }
-    }));
+async function api(path, opts) {
+  opts = opts || {};
+  var headers = { 'Content-Type': 'application/json' };
+  if (state.token) headers['Authorization'] = 'Bearer ' + state.token;
+  if (opts.headers) Object.assign(headers, opts.headers);
+  var res;
+  try {
+    res = await fetch(path, Object.assign({}, opts, { headers: headers }));
+  } catch (networkErr) {
+    throw new Error('Network error: ' + networkErr.message);
+  }
+  if (!res.ok) {
+    var msg = 'HTTP ' + res.status;
+    try { var body = await res.json(); msg = body.detail || body.message || msg; } catch (_) {}
+    throw new Error(msg);
+  }
+  if (res.status === 204) return null;
+  try { return await res.json(); } catch (_) { return null; }
+}
 
-    const simBtn = document.getElementById('simulateBtn');
-    simBtn.addEventListener('click', withLoading(simBtn, async () => {
-      try {
-        const use = document.getElementById('enableOverrides').checked;
-        const payload = use ? {
-          stakeholder_priority_weight: numOrNull(document.getElementById('priorityWeight').value),
-          idle_probability_threshold: numOrNull(document.getElementById('idleThreshold').value),
-          stakeholder_usage_cap: numOrNull(document.getElementById('usageCap').value)
-        } : {};
-        const sim = await api('/simulate', { method: 'POST', body: JSON.stringify(payload) });
-        const m = await api('/metrics');
-        console.log('[SIET] metrics raw:', m);
-        fillMetrics(m);
-        const d = sim.delta;
-        addLog('SIMULATE',
-          `Δutil=${Number(d.utilization_change).toFixed(4)} ` +
-          `Δreq=${d.request_change}`
-        );
-      } catch (e) { addLog('SIMULATE', String(e.message || e), 'error'); }
-    }));
+function withLoading(btn, fn) {
+  return async function() {
+    var orig = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = orig + '\u2026';
+    try {
+      await fn();
+    } catch (escaped) {
+      console.error('[SIET] escaped error:', escaped);
+      addLog('ERROR', escaped.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = orig;
+    }
+  };
+}
 
-    const approveBtn = document.getElementById('approveBtn');
-    approveBtn.addEventListener('click', withLoading(approveBtn, async () => {
-      try {
-        const r = await api('/approve', { method: 'POST' });
-        addLog('APPROVE', `${r.approved_allocations_count} allocations persisted`);
-      } catch (e) { addLog('APPROVE', String(e.message || e), 'error'); }
-    }));
+document.getElementById('targetDate').value = new Date().toISOString().slice(0, 10);
+setEmptyState(predBody,  '\u2190 Click Predict to score all rooms by idle probability');
+setEmptyState(allocBody, '\u2190 Click Allocate to assign rooms to pending requests');
 
-    const refreshBtn = document.getElementById('refreshMetricsBtn');
-    refreshBtn.addEventListener('click', withLoading(refreshBtn, async () => {
-      try {
-        const m = await api('/metrics');
-        console.log('[SIET] metrics raw:', m);
-        fillMetrics(m);
-        addLog('METRICS', 'refreshed');
-      } catch (e) { addLog('METRICS', String(e.message || e), 'error'); }
-    }));
+/* LOGIN */
+var loginBtn = document.getElementById('loginBtn');
+loginBtn.addEventListener('click', withLoading(loginBtn, async function() {
+  loginStatus.textContent = '';
+  var tokenVal = document.getElementById('adminToken').value.trim();
+  if (!tokenVal) { loginStatus.textContent = 'Please enter your admin token.'; return; }
+  try {
+    var r = await api('/login', { method: 'POST', body: JSON.stringify({ admin_token: tokenVal }) });
+    state.token = r.access_token;
+    showDashboard();
+    addLog('LOGIN', 'authenticated — session token issued');
+    try {
+      var ctx = await api('/demo_context');
+      console.log('[SIET] /demo_context:', ctx);
+      if (ctx.default_date)      document.getElementById('targetDate').value = ctx.default_date;
+      if (ctx.default_time_slot) document.getElementById('timeSlot').value   = ctx.default_time_slot;
+      var count = ctx.pending_request_count || 0;
+      contextHint.textContent = 'pending requests: ' + count;
+      addLog('CONTEXT', 'date=' + ctx.default_date + ' slot=' + ctx.default_time_slot + ' pending=' + count);
+    } catch (ctxErr) { addLog('CONTEXT', ctxErr.message, 'warn'); }
+  } catch (e) { loginStatus.textContent = e.message || 'Login failed.'; }
+}));
 
-    showLogin();
-  </script>
+/* LOGOUT */
+document.getElementById('logoutLink').addEventListener('click', function(e) {
+  e.preventDefault();
+  state.token = '';
+  showLogin();
+  setEmptyState(predBody,  '\u2190 Click Predict to score all rooms by idle probability');
+  setEmptyState(allocBody, '\u2190 Click Allocate to assign rooms to pending requests');
+  ['mBaseline','mSimulated','mEfficiency','mDelta'].forEach(function(id) {
+    document.getElementById(id).textContent = '—';
+  });
+});
+
+/* PREDICT */
+var predictBtn = document.getElementById('predictBtn');
+predictBtn.addEventListener('click', withLoading(predictBtn, async function() {
+  try {
+    var r = await api('/predict', {
+      method: 'POST',
+      body: JSON.stringify({ date: document.getElementById('targetDate').value, time_slot: document.getElementById('timeSlot').value })
+    });
+    console.log('[SIET] /predict:', r);
+    var preds = r.predictions || [];
+    fillTable(predBody, preds, ['room_id','date','time_slot','predicted_idle_probability','confidence_score']);
+    addLog('PREDICT', preds.length + ' rooms processed');
+  } catch (e) { addLog('PREDICT', e.message, 'error'); }
+}));
+
+/* ALLOCATE */
+var allocateBtn = document.getElementById('allocateBtn');
+allocateBtn.addEventListener('click', withLoading(allocateBtn, async function() {
+  try {
+    var r = await api('/allocate', {
+      method: 'POST',
+      body: JSON.stringify({
+        requested_date:             document.getElementById('targetDate').value,
+        requested_time_slot:        document.getElementById('timeSlot').value,
+        idle_probability_threshold: numOrNull('idleThreshold'),
+        stakeholder_usage_cap:      numOrNull('usageCap')
+      })
+    });
+    console.log('[SIET] /allocate:', r);
+    var allocs = r.allocations || [];
+    fillTable(allocBody, allocs, ['room_id','stakeholder','time_slot','allocation_score','priority_weight','constraint_status']);
+    addLog('ALLOCATE', 'obj=' + fmt(r.objective_value,4) + ' fairness=' + fmt(r.fairness_metric,4) + ' (' + allocs.length + ' assignments)');
+  } catch (e) { addLog('ALLOCATE', e.message, 'error'); }
+}));
+
+/* SIMULATE */
+var simulateBtn = document.getElementById('simulateBtn');
+simulateBtn.addEventListener('click', withLoading(simulateBtn, async function() {
+  try {
+    var payload = {};
+    if (document.getElementById('enableOverrides').checked) {
+      var pw = numOrNull('priorityWeight'), it = numOrNull('idleThreshold'), uc = numOrNull('usageCap');
+      if (pw !== null) payload.stakeholder_priority_weight = pw;
+      if (it !== null) payload.idle_probability_threshold  = it;
+      if (uc !== null) payload.stakeholder_usage_cap       = uc;
+    }
+    var sim = await api('/simulate', { method: 'POST', body: JSON.stringify(payload) });
+    console.log('[SIET] /simulate:', sim);
+    try {
+      var m = await api('/metrics');
+      console.log('[SIET] /metrics after simulate:', m);
+      fillMetrics(m);
+    } catch (mErr) { addLog('METRICS', 'could not refresh: ' + mErr.message, 'warn'); }
+    var d = sim.delta || {};
+    addLog('SIMULATE', '\u0394util=' + fmt(d.utilization_change,4) + ' \u0394req=' + (d.request_change !== undefined ? d.request_change : '?'));
+  } catch (e) { addLog('SIMULATE', e.message, 'error'); }
+}));
+
+/* APPROVE */
+var approveBtn = document.getElementById('approveBtn');
+approveBtn.addEventListener('click', withLoading(approveBtn, async function() {
+  try {
+    var r = await api('/approve', { method: 'POST' });
+    console.log('[SIET] /approve:', r);
+    addLog('APPROVE', (r.approved_allocations_count !== undefined ? r.approved_allocations_count : '?') + ' allocations persisted');
+  } catch (e) { addLog('APPROVE', e.message, 'error'); }
+}));
+
+/* REFRESH METRICS */
+var refreshMetricsBtn = document.getElementById('refreshMetricsBtn');
+refreshMetricsBtn.addEventListener('click', withLoading(refreshMetricsBtn, async function() {
+  try {
+    var m = await api('/metrics');
+    console.log('[SIET] /metrics refresh:', m);
+    fillMetrics(m);
+    addLog('METRICS', 'refreshed');
+  } catch (e) { addLog('METRICS', e.message, 'error'); }
+}));
+</script>
 </body>
 </html>
