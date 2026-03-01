@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field, field_validator
 
-from backend.conrollers.dependencies import get_auth_service, get_dashboard_service, require_admin
+from backend.controllers.dependencies import get_auth_service, get_dashboard_service, require_admin
 from backend.services.auth_service import (
     AdminTokenNotConfiguredError,
     AuthService,

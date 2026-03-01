@@ -7,7 +7,7 @@ from datetime import date
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field, field_validator
 
-from backend.conrollers.dependencies import get_dashboard_service, require_admin
+from backend.controllers.dependencies import get_dashboard_service, require_admin
 from backend.services.matching_service import (
     AllocationOptimizationService,
     AllocationValidationError,
