@@ -112,6 +112,18 @@
     .admin-badge a { color: var(--muted); text-decoration: underline; }
     .admin-badge a:hover { color: var(--text); }
 
+    .guide-banner {
+      background: rgba(0, 77, 63, 0.35);
+      border-bottom: 1px solid var(--border);
+      padding: 7px 24px;
+      display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
+      font-family: var(--font-mono); font-size: 0.72rem;
+    }
+    .guide-step { color: var(--muted); }
+    .guide-step.active { color: var(--accent); }
+    .guide-arrow { color: var(--border); }
+    .guide-note { color: var(--muted); font-size: 0.68rem; }
+
     .content-grid {
       display: grid;
       grid-template-columns: minmax(0, 1fr) 340px;
@@ -133,6 +145,39 @@
       letter-spacing: 0.12em; color: var(--muted); margin-bottom: 16px;
       padding-bottom: 12px; border-bottom: 1px solid var(--border);
     }
+    .panel-desc {
+      font-size: 0.76rem;
+      color: var(--muted);
+      margin: -8px 0 16px;
+      line-height: 1.6;
+      font-family: var(--font-sans);
+    }
+    .panel-desc strong { color: var(--text); font-weight: 500; }
+
+    .info-box {
+      background: var(--surface); border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      border-radius: 10px; padding: 12px 16px; margin-bottom: 16px;
+    }
+    .info-box-title {
+      font-family: var(--font-mono); font-size: 0.76rem;
+      color: var(--accent); cursor: pointer;
+      list-style: none; user-select: none;
+    }
+    .info-box-title::-webkit-details-marker { display: none; }
+    details[open] .info-box-title { margin-bottom: 12px; }
+    .info-box-body p {
+      font-size: 0.78rem; color: var(--muted); line-height: 1.7; margin-bottom: 10px;
+    }
+    .info-table { width: 100%; border-collapse: collapse; }
+    .info-table td {
+      font-size: 0.74rem; padding: 6px 10px;
+      border-bottom: 1px solid var(--border);
+      font-family: var(--font-mono);
+    }
+    .info-table tr:last-child td { border-bottom: none; }
+    .info-table td:first-child { color: var(--accent); width: 80px; white-space: nowrap; }
+    .info-table td:last-child  { color: var(--muted); }
 
     .controls-grid {
       display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
@@ -256,18 +301,24 @@
       background: var(--surface-2);
     }
     .log-entry {
-      font-family: var(--font-mono);
-      font-size: 0.75rem;
-      padding: 4px 0;
-      border-bottom: 1px solid var(--border);
       display: grid;
-      grid-template-columns: 70px 100px 1fr;
-      gap: 8px;
+      grid-template-columns: 58px 80px 1fr;
+      gap: 6px;
+      padding: 6px 4px;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.72rem;
+      align-items: start;
+      font-family: var(--font-mono);
     }
     .log-entry:last-child { border-bottom: none; }
     .log-time { color: var(--muted); }
     .log-action { color: var(--accent); }
-    .log-detail { color: var(--text); word-break: break-word; }
+    .log-detail {
+      color: var(--text);
+      word-break: break-word;
+      white-space: normal;
+      line-height: 1.5;
+    }
     .log-entry.error .log-action { color: var(--error); }
     .log-entry.warn .log-action { color: var(--warn); }
     .activity-log::-webkit-scrollbar { width: 5px; }
@@ -280,10 +331,11 @@
     @media (max-width: 900px) {
       .content-grid { grid-template-columns: 1fr; padding: 16px; }
       .topbar { padding: 0 14px; }
+      .guide-banner { padding: 7px 14px; }
       .topbar-name { display: none; }
       .metrics-grid { grid-template-columns: 1fr; }
       .toggle-field label { margin-top: 0; }
-      .log-entry { grid-template-columns: 64px 88px 1fr; }
+      .log-entry { grid-template-columns: 52px 74px 1fr; }
     }
   </style>
 </head>
@@ -320,11 +372,38 @@
         <a id="logoutLink" href="#">Logout</a>
       </div>
     </header>
+    <div class="guide-banner">
+      <span class="guide-step active">① Login</span>
+      <span class="guide-arrow">→</span>
+      <span class="guide-step">② Predict</span>
+      <span class="guide-arrow">→</span>
+      <span class="guide-step">③ Allocate</span>
+      <span class="guide-arrow">→</span>
+      <span class="guide-step">④ Simulate</span>
+      <span class="guide-arrow">→</span>
+      <span class="guide-step">⑤ Approve</span>
+      <span class="guide-note"> — run each step in order, top to bottom</span>
+    </div>
 
     <div class="content-grid">
       <div class="left-col">
+        <details class="info-box">
+          <summary class="info-box-title">▸ What is this dashboard?</summary>
+          <div class="info-box-body">
+            <p>The SIET Digital Twin predicts which rooms will be idle, then assigns them to
+            stakeholders who have submitted booking requests — reducing wasted space.</p>
+            <table class="info-table">
+              <tr><td>Predict</td><td>ML model scores every room's idle probability for the selected slot</td></tr>
+              <tr><td>Allocate</td><td>Optimisation solver assigns rooms to pending requests, saved as a draft</td></tr>
+              <tr><td>Simulate</td><td>What-if test — change parameters and see the impact without touching live data</td></tr>
+              <tr><td>Approve</td><td>Commits the draft to the database and marks requests as ALLOCATED</td></tr>
+              <tr><td>Metrics</td><td>Shows baseline vs simulated utilisation rates side by side</td></tr>
+            </table>
+          </div>
+        </details>
         <section class="panel">
           <h3 class="panel-title">Workflow Controls</h3>
+          <p class="panel-desc">Set a date and time slot, then run Predict → Allocate → Approve in order.</p>
           <div class="controls-grid">
             <div class="field">
               <label for="targetDate">Date</label>
@@ -341,7 +420,7 @@
             </div>
             <div class="field">
               <label for="idleThreshold">Idle Threshold</label>
-              <input id="idleThreshold" type="number" min="0" max="1" step="0.01" value="0.25" />
+              <input id="idleThreshold" type="number" min="0" max="1" step="0.01" value="0.25" title="Only rooms with idle probability above this value are eligible (0.25 = 25%)" />
             </div>
             <div class="field">
               <label for="usageCap">Usage Cap</label>
@@ -358,6 +437,7 @@
 
         <section class="panel">
           <h3 class="panel-title">Simulation</h3>
+          <p class="panel-desc">Test "what if" policy changes in memory — nothing is saved until you click Approve.</p>
           <div class="controls-grid">
             <div class="field toggle-field">
               <label>
@@ -378,6 +458,7 @@
 
         <section class="panel">
           <h3 class="panel-title">Idle Probability - All Rooms</h3>
+          <p class="panel-desc">Higher idle probability means the room is more likely to be empty — and a better candidate to reallocate.</p>
           <div class="table-wrap">
             <table id="predictionTable">
               <thead>
@@ -393,6 +474,7 @@
 
         <section class="panel">
           <h3 class="panel-title">Allocation Results</h3>
+          <p class="panel-desc">Optimised room assignments. SATISFIED = room found. UNASSIGNED = no eligible room available.</p>
           <div class="table-wrap">
             <table id="allocationTable">
               <thead>
@@ -410,6 +492,7 @@
       <aside class="right-col">
         <section class="panel">
           <h3 class="panel-title">Metrics</h3>
+          <p class="panel-desc">Compares utilisation before and after. Run Simulate first, then Refresh Metrics.</p>
           <div class="metrics-grid">
             <div class="metric-tile">
               <span class="metric-label">Baseline Idle Rate</span>
@@ -432,6 +515,7 @@
 
         <section class="panel panel-log">
           <h3 class="panel-title">Activity Log</h3>
+          <p class="panel-desc">Every action this session — newest at top.</p>
           <div id="activityLog" class="activity-log"></div>
         </section>
       </aside>
@@ -489,16 +573,39 @@
       return res.status === 204 ? null : res.json();
     }
 
+    function setEmptyState(tbody, message) {
+      tbody.innerHTML = '';
+      const tr = document.createElement('tr');
+      const td = document.createElement('td');
+      td.colSpan = 10;
+      td.style.cssText = 'text-align:center;color:var(--muted);font-family:var(--font-mono);font-size:0.78rem;padding:28px;';
+      td.textContent = message;
+      tr.appendChild(td);
+      tbody.appendChild(tr);
+    }
+
+    function formatCell(v, col) {
+      if (v === null || v === undefined) return '—';
+      if (typeof v === 'number') {
+        if (Number.isInteger(v) || (col === 'room_id' && v % 1 === 0)) {
+          return String(Math.round(v));
+        }
+        return v.toFixed(4);
+      }
+      return String(v);
+    }
+
     function fillTable(tbody, rows, cols) {
       tbody.innerHTML = '';
-      (rows || []).forEach(row => {
+      if (!rows || rows.length === 0) {
+        setEmptyState(tbody, 'No results.');
+        return;
+      }
+      rows.forEach(row => {
         const tr = document.createElement('tr');
         cols.forEach(col => {
           const td = document.createElement('td');
-          const v = row[col];
-          td.textContent = v === null || v === undefined ? '-' : String(
-            typeof v === 'number' ? v.toFixed(4) : v
-          );
+          td.textContent = formatCell(row[col], col);
           tr.appendChild(td);
         });
         tbody.appendChild(tr);
@@ -545,6 +652,8 @@
         });
         state.bearerToken = r.access_token;
         showDashboard();
+        setEmptyState(predBody, '← Run Predict to score all rooms by idle probability');
+        setEmptyState(allocBody, '← Run Allocate to assign rooms to pending requests');
         addLog('LOGIN', 'authenticated - session token issued');
         await loadDemoContext();
       } catch (e) {
@@ -590,7 +699,11 @@
         fillTable(allocBody, r.allocations, [
           'room_id', 'stakeholder', 'time_slot', 'allocation_score', 'priority_weight', 'constraint_status'
         ]);
-        addLog('ALLOCATE', `obj=${Number(r.objective_value).toFixed(4)} fairness=${Number(r.fairness_metric).toFixed(4)}`);
+        addLog('ALLOCATE',
+          `obj=${Number(r.objective_value).toFixed(4)} ` +
+          `fairness=${Number(r.fairness_metric).toFixed(4)} ` +
+          `(${(r.allocations || []).length} assignments)`
+        );
       } catch (e) { addLog('ALLOCATE', e.message, 'error'); }
     }));
 
@@ -607,7 +720,10 @@
         const m = await api('/metrics');
         fillMetrics(m);
         const d = sim.delta;
-        addLog('SIMULATE', `Dutil=${Number(d.utilization_change).toFixed(4)} Dreq=${d.request_change}`);
+        addLog('SIMULATE',
+          `Δutil=${Number(d.utilization_change).toFixed(4)} ` +
+          `Δreq=${d.request_change}`
+        );
       } catch (e) { addLog('SIMULATE', e.message, 'error'); }
     }));
 
