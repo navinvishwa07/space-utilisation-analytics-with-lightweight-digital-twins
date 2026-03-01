@@ -49,6 +49,7 @@ class DashboardWorkflowService:
         self._matching_service = matching_service or AllocationOptimizationService(
             repository=self._repository,
             settings=self._settings,
+            prediction_service=self._prediction_service,
         )
         self._simulation_service = simulation_service or SimulationService(
             repository=self._repository,
@@ -256,3 +257,23 @@ class DashboardWorkflowService:
             priority_adjustment=None,
         )
         return dict(simulation_result["metrics"])
+
+    def get_demo_context(self) -> dict[str, Any]:
+        pending_windows = self._repository.list_pending_request_windows(limit=20)
+        default_date = None
+        default_time_slot = None
+        if pending_windows:
+            default_date, default_time_slot, _ = pending_windows[0]
+        return {
+            "default_date": default_date,
+            "default_time_slot": default_time_slot,
+            "pending_windows": [
+                {
+                    "requested_date": requested_date,
+                    "requested_time_slot": requested_time_slot,
+                    "request_count": request_count,
+                }
+                for requested_date, requested_time_slot, request_count in pending_windows
+            ],
+            "pending_request_count": len(self._repository.list_all_pending_requests()),
+        }

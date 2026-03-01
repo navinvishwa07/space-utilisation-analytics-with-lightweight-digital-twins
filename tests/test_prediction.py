@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from backend.conrollers.allocation_controller import router
+from backend.controllers.allocation_controller import router
 from backend.repository.data_repository import DataRepository
 from backend.services.prediction_service import AvailabilityPredictionService
 from backend.utils.config import get_settings
@@ -61,6 +61,7 @@ def test_predict_availability_endpoint_success(tmp_path):
             "date": datetime.now(timezone.utc).date().isoformat(),
             "time_slot": "11-13",
         },
+        headers={"Authorization": "Bearer admin-token"},
     )
 
     assert response.status_code == 200
@@ -89,6 +90,25 @@ def test_predict_availability_endpoint_room_not_found(tmp_path):
             "date": datetime.now(timezone.utc).date().isoformat(),
             "time_slot": "14-16",
         },
+        headers={"Authorization": "Bearer admin-token"},
     )
 
     assert response.status_code == 404
+
+
+def test_model_metadata_is_persisted_on_training(tmp_path):
+    settings = _build_test_settings(tmp_path, "model_metadata_test.db")
+    repository = DataRepository(settings)
+    repository.initialize_database()
+    repository.seed_synthetic_data()
+    service = AvailabilityPredictionService(repository=repository, settings=settings)
+
+    service.train_model()
+    metadata = service.get_model_metadata()
+    persisted = repository.get_model_metadata()
+
+    assert metadata["model_version"] == settings.prediction_model_version
+    assert metadata["model_type"] in {"logistic_regression", "dummy_most_frequent"}
+    assert "trained_at" in metadata
+    assert persisted is not None
+    assert persisted["model_version"] == settings.prediction_model_version

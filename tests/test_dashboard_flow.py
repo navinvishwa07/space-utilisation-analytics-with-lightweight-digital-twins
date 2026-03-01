@@ -8,8 +8,8 @@ from fastapi.testclient import TestClient
 
 pytest.importorskip("ortools")
 
-from backend.conrollers.allocation_controller import router as allocation_router
-from backend.conrollers.dashboard_controller import router as dashboard_router
+from backend.controllers.allocation_controller import router as allocation_router
+from backend.controllers.dashboard_controller import router as dashboard_router
 from backend.repository.data_repository import DataRepository
 from backend.services.auth_service import AuthService
 from backend.services.dashboard_service import DashboardWorkflowService
@@ -42,7 +42,11 @@ def _build_test_app(tmp_path, admin_token: str) -> tuple[FastAPI, DataRepository
 
     prediction_service = AvailabilityPredictionService(repository=repository, settings=settings)
     prediction_service.train_model()
-    matching_service = AllocationOptimizationService(repository=repository, settings=settings)
+    matching_service = AllocationOptimizationService(
+        repository=repository,
+        settings=settings,
+        prediction_service=prediction_service,
+    )
     simulation_service = SimulationService(
         repository=repository,
         settings=settings,
@@ -86,6 +90,11 @@ def test_dashboard_end_to_end_flow(tmp_path):
         json={"date": target_date, "time_slot": target_slot},
     )
     assert unauth_predict.status_code == 401
+
+    demo_context_response = client.get("/demo_context")
+    assert demo_context_response.status_code == 200
+    demo_context = demo_context_response.json()
+    assert "pending_windows" in demo_context
 
     login_response = client.post(
         "/login",

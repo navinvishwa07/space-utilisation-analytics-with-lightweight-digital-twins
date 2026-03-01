@@ -17,9 +17,8 @@ from backend.domain.constraints import AllocationConfig, validate_allocation_con
 from backend.domain.models import AllocationDecision, AllocationRequest, IdlePrediction, Room
 from backend.repository.data_repository import DataRepository
 from backend.services.matching_service import (
-    build_model,
     compute_fairness_metric,
-    solve_model,
+    optimize_with_fallback,
 )
 from backend.services.prediction_service import (
     AvailabilityPredictionService,
@@ -305,14 +304,7 @@ class SimulationService:
                 unassigned_request_ids.extend(request.request_id for request in slot_requests)
                 continue
 
-            artifacts = build_model(
-                rooms=dataset.rooms,
-                requests=slot_requests,
-                predictions=slot_predictions,
-                config=config,
-            )
-            slot_result = solve_model(
-                artifacts=artifacts,
+            slot_result = optimize_with_fallback(
                 rooms=dataset.rooms,
                 requests=slot_requests,
                 predictions=slot_predictions,

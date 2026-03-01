@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 
 pytest.importorskip("ortools")
 
-from backend.conrollers.allocation_controller import router
+from backend.controllers.allocation_controller import router
 from backend.repository.data_repository import DataRepository
 from backend.services.matching_service import AllocationOptimizationService
 from backend.utils.config import get_settings
@@ -131,6 +131,7 @@ def test_optimize_allocation_endpoint_success(tmp_path):
             "idle_probability_threshold": 0.5,
             "stakeholder_usage_cap": 0.7,
         },
+        headers={"Authorization": "Bearer admin-token"},
     )
 
     assert response.status_code == 200

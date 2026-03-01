@@ -247,28 +247,29 @@
             </div>
             <div>
               <label for="idleThreshold">Idle Probability Threshold</label>
-              <input id="idleThreshold" type="number" min="0" max="1" step="0.01" placeholder="optional" />
+              <input id="idleThreshold" type="number" min="0" max="1" step="0.01" value="0.25" />
             </div>
             <div>
               <label for="usageCap">Stakeholder Usage Cap</label>
-              <input id="usageCap" type="number" min="0.01" max="1" step="0.01" placeholder="optional" />
+              <input id="usageCap" type="number" min="0.01" max="1" step="0.01" value="0.60" />
             </div>
             <button id="predictBtn" class="secondary">Predict</button>
             <button id="allocateBtn" class="secondary">Allocate</button>
             <button id="approveBtn">Approve</button>
           </div>
+          <div id="demoContextHint" class="status warn"></div>
         </section>
 
         <section class="panel">
           <h2>Simulation Toggle</h2>
           <div class="controls">
             <label class="toggle">
-              <input id="enableOverrides" type="checkbox" />
+              <input id="enableOverrides" type="checkbox" checked />
               Enable Temporary Overrides
             </label>
             <div>
               <label for="priorityWeight">Stakeholder Priority Weight</label>
-              <input id="priorityWeight" type="number" min="0.01" step="0.01" placeholder="optional" />
+              <input id="priorityWeight" type="number" min="0.01" step="0.01" value="1.20" />
             </div>
             <button id="simulateBtn">Run Simulation</button>
             <button id="refreshMetricsBtn" class="ghost">Refresh Metrics</button>
@@ -342,6 +343,7 @@
       const state = { bearerToken: "" };
 
       const statusNode = document.getElementById("status");
+      const demoContextHintNode = document.getElementById("demoContextHint");
       const predictionBody = document.querySelector("#predictionTable tbody");
       const allocationBody = document.querySelector("#allocationTable tbody");
 
@@ -397,6 +399,23 @@
           Number(metrics.allocation_efficiency_score).toFixed(4);
         document.getElementById("mDelta").textContent =
           `${Number(metrics.utilization_delta_percentage).toFixed(2)}%`;
+      }
+
+      async function loadDemoContext() {
+        try {
+          const context = await apiRequest("/demo_context");
+          if (context.default_date) {
+            document.getElementById("targetDate").value = context.default_date;
+          }
+          if (context.default_time_slot) {
+            document.getElementById("timeSlot").value = context.default_time_slot;
+          }
+          demoContextHintNode.textContent = context.default_date
+            ? `Demo defaults loaded from pending requests: ${context.default_date} ${context.default_time_slot}`
+            : "No pending requests found. Seed demo requests or create requests for allocation.";
+        } catch (error) {
+          demoContextHintNode.textContent = `Could not load demo context: ${error.message}`;
+        }
       }
 
       document.getElementById("loginBtn").addEventListener("click", async () => {
@@ -497,6 +516,8 @@
           setStatus(error.message, "error");
         }
       });
+
+      loadDemoContext();
     </script>
   </body>
 </html>

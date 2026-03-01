@@ -77,3 +77,22 @@ def test_seed_synthetic_data_is_idempotent_and_reuses_existing_csv(tmp_path):
         )
         unique_rows = int(cursor.fetchone()[0])
     assert unique_rows == expected_rows
+
+
+def test_seed_demo_requests_if_empty_is_idempotent(tmp_path):
+    settings = _build_test_settings(tmp_path, "demo_requests.db")
+    repository = DataRepository(settings)
+    repository.initialize_database()
+    repository.seed_synthetic_data()
+
+    assert repository.count_requests() == 0
+    inserted = repository.seed_demo_requests_if_empty()
+    assert 5 <= inserted <= 10
+    assert repository.count_requests() == inserted
+
+    inserted_again = repository.seed_demo_requests_if_empty()
+    assert inserted_again == 0
+    assert repository.count_requests() == inserted
+
+    pending_windows = repository.list_pending_request_windows()
+    assert pending_windows

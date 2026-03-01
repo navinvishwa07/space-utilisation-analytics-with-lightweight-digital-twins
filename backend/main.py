@@ -32,6 +32,7 @@ def create_app() -> FastAPI:
     matching_service = AllocationOptimizationService(
         repository=repository,
         settings=settings,
+        prediction_service=prediction_service,
     )
     simulation_service = SimulationService(
         repository=repository,
@@ -78,6 +79,7 @@ def startup(app: FastAPI | None = None) -> None:
 
     repository.initialize_database()
     repository.seed_synthetic_data()
+    repository.seed_demo_requests_if_empty()
     prediction_service.train_model()
     logger.info("System startup completed")
 

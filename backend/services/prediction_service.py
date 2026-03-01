@@ -6,7 +6,7 @@ import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from threading import RLock
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 import numpy as np
 import pandas as pd
@@ -54,6 +54,22 @@ class PredictionResponse:
         }
 
 
+@dataclass(frozen=True)
+class ModelMetadata:
+    model_type: str
+    model_version: str
+    trained_at: str
+    training_rows: int
+
+    def to_dict(self) -> dict[str, str | int]:
+        return {
+            "model_type": self.model_type,
+            "model_version": self.model_version,
+            "trained_at": self.trained_at,
+            "training_rows": self.training_rows,
+        }
+
+
 class AvailabilityPredictionService:
     """Trains and serves the baseline logistic regression model.
 
@@ -83,6 +99,7 @@ class AvailabilityPredictionService:
         self._model_lock = RLock()
         self._trained_at: Optional[datetime] = None
         self._training_rows: int = 0
+        self._model_metadata: Optional[ModelMetadata] = None
 
     def _validate_inputs(self, room_id: int, date: str, time_slot: str) -> datetime:
         if room_id <= 0:
@@ -275,11 +292,24 @@ class AvailabilityPredictionService:
 
             self._model = pipeline
             self._trained_at = datetime.now(timezone.utc)
+            trained_at = self._trained_at.isoformat()
+            self._model_metadata = ModelMetadata(
+                model_type=model_name,
+                model_version=self._settings.prediction_model_version,
+                trained_at=trained_at,
+                training_rows=self._training_rows,
+            )
+            self._repository.save_model_metadata(
+                model_type=model_name,
+                model_version=self._settings.prediction_model_version,
+                trained_at=trained_at,
+            )
             logger.info(
-                "Prediction training completed | rows=%s | model=%s | trained_at=%s",
+                "Prediction training completed | rows=%s | model=%s | version=%s | trained_at=%s",
                 self._training_rows,
                 model_name,
-                self._trained_at.isoformat(),
+                self._settings.prediction_model_version,
+                trained_at,
             )
 
     def retrain_model(self) -> None:
@@ -300,6 +330,15 @@ class AvailabilityPredictionService:
 
         # Defensive fallback if estimator only knows class 0.
         return 0.0
+
+    def get_model_metadata(self) -> dict[str, Any]:
+        with self._model_lock:
+            if self._model_metadata is not None:
+                return dict(self._model_metadata.to_dict())
+            persisted = self._repository.get_model_metadata()
+            if persisted is None:
+                raise ModelNotReadyError("Model metadata is unavailable; train model first")
+            return dict(persisted)
 
     def predict(
         self,

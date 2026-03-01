@@ -67,6 +67,7 @@ class Settings:
     prediction_rolling_window_days: int
     prediction_default_occupancy_probability: float
     prediction_time_slot_regex: str
+    prediction_model_version: str
 
     allocation_idle_probability_threshold: float
     allocation_stakeholder_usage_cap: float
@@ -126,9 +127,13 @@ def get_settings() -> Settings:
             "PREDICTION_TIME_SLOT_REGEX",
             r"^([01]\d|2[0-3])-([01]\d|2[0-3])$",
         ),
+        prediction_model_version=os.getenv(
+            "PREDICTION_MODEL_VERSION",
+            "idle_logreg_v1",
+        ),
         allocation_idle_probability_threshold=_env_float(
             "ALLOCATION_IDLE_PROBABILITY_THRESHOLD",
-            0.50,
+            0.25,
         ),
         allocation_stakeholder_usage_cap=_env_float(
             "ALLOCATION_STAKEHOLDER_USAGE_CAP",

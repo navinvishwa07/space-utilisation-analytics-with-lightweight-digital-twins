@@ -114,6 +114,22 @@ class MetricsResponse(BaseModel):
     utilization_delta_percentage: float
 
 
+class PendingWindowResponse(BaseModel):
+    requested_date: date
+    requested_time_slot: str = Field(pattern=settings.prediction_time_slot_regex)
+    request_count: int = Field(ge=0)
+
+
+class DemoContextResponse(BaseModel):
+    default_date: date | None = None
+    default_time_slot: str | None = Field(
+        default=None,
+        pattern=settings.prediction_time_slot_regex,
+    )
+    pending_windows: list[PendingWindowResponse]
+    pending_request_count: int = Field(ge=0)
+
+
 @router.get("/", include_in_schema=False)
 async def dashboard_home() -> FileResponse:
     project_root = Path(__file__).resolve().parents[2]
@@ -124,6 +140,21 @@ async def dashboard_home() -> FileResponse:
 @router.get("/dashboard", include_in_schema=False)
 async def dashboard_page() -> FileResponse:
     return await dashboard_home()
+
+
+@router.get("/demo_context", response_model=DemoContextResponse, status_code=status.HTTP_200_OK)
+async def demo_context(
+    workflow_service: DashboardWorkflowService = Depends(get_dashboard_service),
+) -> DemoContextResponse:
+    try:
+        result = workflow_service.get_demo_context()
+        return DemoContextResponse(**result)
+    except Exception as exc:  # pragma: no cover - defensive fallback
+        logger.exception("Unexpected demo context failure")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to load demo context",
+        ) from exc
 
 
 @router.post("/login", response_model=LoginResponse, status_code=status.HTTP_200_OK)

@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 
 pytest.importorskip("ortools")
 
-from backend.conrollers.allocation_controller import router
+from backend.controllers.allocation_controller import router
 from backend.repository.data_repository import DataRepository
 from backend.services.prediction_service import AvailabilityPredictionService
 from backend.services.simulation_service import SimulationService, TemporaryConstraints
@@ -137,6 +137,7 @@ def test_simulate_endpoint_validates_unknown_capacity_override_room(tmp_path):
 
     app = FastAPI()
     app.include_router(router)
+    app.state.repository = repository
     app.state.prediction_service = None
     app.state.matching_service = None
     app.state.simulation_service = simulation_service

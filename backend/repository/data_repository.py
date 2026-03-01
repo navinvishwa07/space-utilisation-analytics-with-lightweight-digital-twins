@@ -55,6 +55,16 @@ class DataRepository:
         (9, "Room I", 30, "Seminar", "Block 5"),
         (10, "Room J", 55, "Auditorium", "Block 5"),
     )
+    _DEMO_REQUEST_BLUEPRINTS: tuple[tuple[int, int, int, float, str], ...] = (
+        (2, 0, 20, 1.60, "Dept-Engineering"),
+        (2, 0, 28, 1.40, "Dept-Science"),
+        (2, 0, 14, 1.10, "Student-Innovation"),
+        (2, 1, 38, 1.80, "Events"),
+        (3, 2, 18, 1.25, "Dept-CS"),
+        (3, 2, 42, 1.55, "Operations"),
+        (3, 3, 12, 1.05, "Community-Lab"),
+        (4, 1, 25, 1.30, "Research-Center"),
+    )
 
     def __init__(self, settings: Optional[Settings] = None) -> None:
         self._settings = settings or get_settings()
@@ -338,6 +348,16 @@ class DataRepository:
                     );
                     """
                 )
+                cursor.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS ModelRegistry (
+                        id INTEGER PRIMARY KEY CHECK (id = 1),
+                        model_type TEXT NOT NULL,
+                        model_version TEXT NOT NULL,
+                        trained_at TEXT NOT NULL
+                    );
+                    """
+                )
 
                 cursor.execute(
                     """
@@ -437,6 +457,64 @@ class DataRepository:
                 )
         except sqlite3.Error as exc:
             raise RuntimeError(f"Synthetic data seeding failed: {exc}") from exc
+
+    def _build_demo_requests(self) -> list[tuple[int, str, str, float, str]]:
+        slots = self._settings.synthetic_time_slots
+        if not slots:
+            raise RuntimeError("No synthetic_time_slots configured for demo request seeding")
+        reference_end_date = datetime.strptime(
+            self._settings.synthetic_reference_end_date,
+            "%Y-%m-%d",
+        ).date()
+        requests: list[tuple[int, str, str, float, str]] = []
+        for day_offset, slot_index, capacity, priority, stakeholder in self._DEMO_REQUEST_BLUEPRINTS:
+            request_date = (reference_end_date + timedelta(days=day_offset)).isoformat()
+            request_slot = slots[slot_index % len(slots)]
+            requests.append(
+                (
+                    capacity,
+                    request_date,
+                    request_slot,
+                    priority,
+                    stakeholder,
+                )
+            )
+        return requests
+
+    def seed_demo_requests_if_empty(self) -> int:
+        """Seed deterministic demo requests only when Requests is empty."""
+        demo_rows = self._build_demo_requests()
+        try:
+            with self._connect() as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT COUNT(*) AS count FROM Requests;")
+                existing_count = int(cursor.fetchone()["count"])
+                if existing_count > 0:
+                    logger.info(
+                        "Demo request seed skipped because Requests already has %s rows",
+                        existing_count,
+                    )
+                    return 0
+                cursor.executemany(
+                    """
+                    INSERT INTO Requests (
+                        requested_capacity,
+                        requested_date,
+                        requested_time_slot,
+                        priority_weight,
+                        stakeholder_id,
+                        status
+                    )
+                    VALUES (?, ?, ?, ?, ?, 'PENDING');
+                    """,
+                    demo_rows,
+                )
+                conn.commit()
+                inserted_count = len(demo_rows)
+            logger.info("Seeded %s deterministic demo requests", inserted_count)
+            return inserted_count
+        except sqlite3.Error as exc:
+            raise RuntimeError(f"Demo request seeding failed: {exc}") from exc
 
     def get_room(self, room_id: int) -> Optional[RoomRecord]:
         """Fetch room metadata for validation and feature enrichment."""
@@ -571,6 +649,38 @@ class DataRepository:
             cursor = conn.cursor()
             cursor.execute("SELECT COUNT(*) AS count FROM Predictions;")
             return int(cursor.fetchone()["count"])
+
+    def count_requests(self) -> int:
+        with self._connect() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT COUNT(*) AS count FROM Requests;")
+            return int(cursor.fetchone()["count"])
+
+    def list_pending_request_windows(
+        self,
+        limit: int = 20,
+    ) -> list[tuple[str, str, int]]:
+        with self._connect() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                SELECT requested_date, requested_time_slot, COUNT(*) AS request_count
+                FROM Requests
+                WHERE status = 'PENDING'
+                GROUP BY requested_date, requested_time_slot
+                ORDER BY requested_date ASC, requested_time_slot ASC
+                LIMIT ?;
+                """,
+                (limit,),
+            )
+            return [
+                (
+                    str(row["requested_date"]),
+                    str(row["requested_time_slot"]),
+                    int(row["request_count"]),
+                )
+                for row in cursor.fetchall()
+            ]
 
     def list_rooms_for_allocation(self) -> list[Room]:
         """Return room capacities for allocation optimization."""
@@ -840,6 +950,47 @@ class DataRepository:
                 return None
             return str(row["status"])
 
+    def save_model_metadata(
+        self,
+        *,
+        model_type: str,
+        model_version: str,
+        trained_at: str,
+    ) -> None:
+        with self._connect() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                INSERT INTO ModelRegistry (id, model_type, model_version, trained_at)
+                VALUES (1, ?, ?, ?)
+                ON CONFLICT(id) DO UPDATE SET
+                    model_type = excluded.model_type,
+                    model_version = excluded.model_version,
+                    trained_at = excluded.trained_at;
+                """,
+                (model_type, model_version, trained_at),
+            )
+            conn.commit()
+
+    def get_model_metadata(self) -> Optional[dict[str, str]]:
+        with self._connect() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                SELECT model_type, model_version, trained_at
+                FROM ModelRegistry
+                WHERE id = 1;
+                """
+            )
+            row = cursor.fetchone()
+            if row is None:
+                return None
+            return {
+                "model_type": str(row["model_type"]),
+                "model_version": str(row["model_version"]),
+                "trained_at": str(row["trained_at"]),
+            }
+
 
 def get_database_path() -> str:
     """Backward compatible access for existing startup scripts."""
@@ -854,3 +1005,8 @@ def initialize_database() -> None:
 def seed_synthetic_data() -> None:
     """Backward compatible module-level seeding entry point."""
     DataRepository().seed_synthetic_data()
+
+
+def seed_demo_requests_if_empty() -> int:
+    """Backward compatible module-level demo request seeding entry point."""
+    return DataRepository().seed_demo_requests_if_empty()

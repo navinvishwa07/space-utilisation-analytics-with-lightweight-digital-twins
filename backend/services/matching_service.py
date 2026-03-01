@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from collections import Counter, defaultdict
 from dataclasses import dataclass
 from datetime import datetime
@@ -22,6 +23,12 @@ from backend.domain.models import (
     Room,
 )
 from backend.repository.data_repository import DataRepository
+from backend.services.prediction_service import (
+    AvailabilityPredictionService,
+    ModelNotReadyError,
+    PredictionValidationError,
+    RoomNotFoundError,
+)
 from backend.utils.config import Settings, get_settings
 from backend.utils.logger import get_logger
 
@@ -136,6 +143,123 @@ def forecast_demand(
     return forecasts
 
 
+def _compute_stakeholder_cap_limit(
+    *,
+    stakeholder_usage_cap: float,
+    total_requests: int,
+) -> int:
+    if total_requests <= 0:
+        return 0
+    limit = int(math.floor(stakeholder_usage_cap * total_requests))
+    return max(1, limit)
+
+
+def _has_feasible_pair(
+    *,
+    rooms: list[Room],
+    requests: list[AllocationRequest],
+    predictions: list[IdlePrediction],
+    config: AllocationConfig,
+) -> bool:
+    prediction_by_room = {prediction.room_id: prediction.idle_probability for prediction in predictions}
+    for request in requests:
+        for room in rooms:
+            idle_probability = prediction_by_room.get(room.room_id, 0.0)
+            if idle_probability <= config.idle_probability_threshold:
+                continue
+            if room.capacity < request.requested_capacity:
+                continue
+            return True
+    return False
+
+
+def greedy_fallback_allocate(
+    *,
+    rooms: list[Room],
+    requests: list[AllocationRequest],
+    predictions: list[IdlePrediction],
+    config: AllocationConfig,
+    reason: str,
+) -> OptimizationResult:
+    prediction_by_room = {prediction.room_id: prediction.idle_probability for prediction in predictions}
+    sorted_requests = sorted(
+        requests,
+        key=lambda request: (
+            -request.priority_weight,
+            request.request_id,
+        ),
+    )
+    available_rooms = {room.room_id: room for room in rooms}
+    stakeholder_allocations: Counter[str] = Counter()
+    stakeholder_limit = _compute_stakeholder_cap_limit(
+        stakeholder_usage_cap=config.stakeholder_usage_cap,
+        total_requests=len(requests),
+    )
+
+    allocations: list[AllocationDecision] = []
+    for request in sorted_requests:
+        if stakeholder_allocations[request.stakeholder_id] >= stakeholder_limit:
+            continue
+
+        eligible_rooms = []
+        for room_id, room in available_rooms.items():
+            if room.capacity < request.requested_capacity:
+                continue
+            idle_probability = prediction_by_room.get(room_id, 0.0)
+            if idle_probability <= config.idle_probability_threshold:
+                continue
+            eligible_rooms.append((room, idle_probability))
+
+        if not eligible_rooms:
+            continue
+
+        selected_room, selected_idle_probability = sorted(
+            eligible_rooms,
+            key=lambda pair: (
+                -pair[1],
+                pair[0].capacity,
+                pair[0].room_id,
+            ),
+        )[0]
+        allocation_score = float(selected_idle_probability * request.priority_weight)
+        allocations.append(
+            AllocationDecision(
+                request_id=request.request_id,
+                room_id=selected_room.room_id,
+                score=allocation_score,
+                stakeholder_id=request.stakeholder_id,
+            )
+        )
+        stakeholder_allocations[request.stakeholder_id] += 1
+        available_rooms.pop(selected_room.room_id, None)
+
+    allocated_request_ids = {allocation.request_id for allocation in allocations}
+    unassigned_request_ids = [
+        request.request_id
+        for request in requests
+        if request.request_id not in allocated_request_ids
+    ]
+    objective_value = float(sum(allocation.score for allocation in allocations))
+    fairness_metric = compute_fairness_metric(requests=requests, allocations=allocations)
+    logger.warning(
+        (
+            "Greedy fallback allocation used | reason=%s | objective_value=%.6f | "
+            "fairness_metric=%.6f | allocations=%s | unassigned=%s"
+        ),
+        reason,
+        objective_value,
+        fairness_metric,
+        len(allocations),
+        len(unassigned_request_ids),
+    )
+    return OptimizationResult(
+        allocations=allocations,
+        objective_value=objective_value,
+        fairness_metric=fairness_metric,
+        unassigned_request_ids=unassigned_request_ids,
+    )
+
+
 def build_model(
     *,
     rooms: list[Room],
@@ -235,8 +359,6 @@ def solve_model(
 ) -> OptimizationResult:
     """Solve CP-SAT model and return allocations, objective, fairness, and misses."""
     _ensure_solver_dependency()
-    del rooms
-    del predictions
 
     if not requests:
         return OptimizationResult(
@@ -254,12 +376,12 @@ def solve_model(
     status = solver.Solve(artifacts.model)
     status_name = solver.StatusName(status)
     if status not in (cp_model.OPTIMAL, cp_model.FEASIBLE):
-        logger.warning("Allocation solve failed | status=%s", status_name)
-        return OptimizationResult(
-            allocations=[],
-            objective_value=0.0,
-            fairness_metric=0.0,
-            unassigned_request_ids=[request.request_id for request in requests],
+        return greedy_fallback_allocate(
+            rooms=rooms,
+            requests=requests,
+            predictions=predictions,
+            config=config,
+            reason=f"cp_sat_status={status_name}",
         )
 
     request_lookup = {request.request_id: request for request in requests}
@@ -298,12 +420,75 @@ def solve_model(
         len(allocations),
         len(unassigned),
     )
-    return OptimizationResult(
+    result = OptimizationResult(
         allocations=allocations,
         objective_value=objective_value,
         fairness_metric=fairness_metric,
         unassigned_request_ids=unassigned,
     )
+    if result.allocations:
+        return result
+    if _has_feasible_pair(
+        rooms=rooms,
+        requests=requests,
+        predictions=predictions,
+        config=config,
+    ):
+        return greedy_fallback_allocate(
+            rooms=rooms,
+            requests=requests,
+            predictions=predictions,
+            config=config,
+            reason="cp_sat_zero_allocation_with_feasible_pairs",
+        )
+    return result
+
+
+def optimize_with_fallback(
+    *,
+    rooms: list[Room],
+    requests: list[AllocationRequest],
+    predictions: list[IdlePrediction],
+    config: AllocationConfig,
+) -> OptimizationResult:
+    if not requests:
+        return OptimizationResult(
+            allocations=[],
+            objective_value=0.0,
+            fairness_metric=0.0,
+            unassigned_request_ids=[],
+        )
+    if cp_model is None:
+        return greedy_fallback_allocate(
+            rooms=rooms,
+            requests=requests,
+            predictions=predictions,
+            config=config,
+            reason="cp_sat_dependency_unavailable",
+        )
+    try:
+        artifacts = build_model(
+            rooms=rooms,
+            requests=requests,
+            predictions=predictions,
+            config=config,
+        )
+        return solve_model(
+            artifacts=artifacts,
+            rooms=rooms,
+            requests=requests,
+            predictions=predictions,
+            config=config,
+        )
+    except Exception as exc:  # pragma: no cover - defensive runtime fallback
+        logger.exception("CP-SAT allocation failed unexpectedly, switching to greedy fallback")
+        return greedy_fallback_allocate(
+            rooms=rooms,
+            requests=requests,
+            predictions=predictions,
+            config=config,
+            reason=f"cp_sat_exception={exc.__class__.__name__}",
+        )
 
 
 def persist_results(
@@ -336,9 +521,70 @@ class AllocationOptimizationService:
         self,
         repository: Optional[DataRepository] = None,
         settings: Optional[Settings] = None,
+        prediction_service: Optional[AvailabilityPredictionService] = None,
     ) -> None:
         self._settings = settings or get_settings()
         self._repository = repository or DataRepository(self._settings)
+        self._prediction_service = prediction_service
+
+    def _ensure_predictions_for_slot(
+        self,
+        *,
+        requested_date: str,
+        requested_time_slot: str,
+        rooms: list[Room],
+    ) -> list[IdlePrediction]:
+        persisted_predictions = self._repository.list_idle_predictions(
+            requested_date=requested_date,
+            requested_time_slot=requested_time_slot,
+        )
+        prediction_by_room = {
+            prediction.room_id: prediction
+            for prediction in persisted_predictions
+        }
+        missing_room_ids = [
+            room.room_id
+            for room in rooms
+            if room.room_id not in prediction_by_room
+        ]
+        if not missing_room_ids:
+            return persisted_predictions
+        if self._prediction_service is None:
+            raise AllocationValidationError(
+                (
+                    "Missing idle predictions for the selected date/time slot and prediction "
+                    "service is unavailable. Run /predict first or configure prediction service."
+                )
+            )
+
+        logger.info(
+            (
+                "Allocation auto-generating missing predictions | date=%s | time_slot=%s | "
+                "missing_rooms=%s"
+            ),
+            requested_date,
+            requested_time_slot,
+            missing_room_ids,
+        )
+        for room_id in missing_room_ids:
+            try:
+                self._prediction_service.predict(
+                    room_id=room_id,
+                    date=requested_date,
+                    time_slot=requested_time_slot,
+                    persist=True,
+                )
+            except (PredictionValidationError, RoomNotFoundError, ModelNotReadyError) as exc:
+                raise AllocationValidationError(
+                    (
+                        "Unable to auto-generate predictions for allocation. "
+                        f"Fix prediction input/model readiness and retry. Details: {exc}"
+                    )
+                ) from exc
+        return self._repository.list_idle_predictions(
+            requested_date=requested_date,
+            requested_time_slot=requested_time_slot,
+        )
 
     def optimize_allocation(
         self,
@@ -370,14 +616,9 @@ class AllocationOptimizationService:
             requested_time_slot=requested_time_slot,
             config=config,
         )
-        _ensure_solver_dependency()
 
         rooms = self._repository.list_rooms_for_allocation()
         requests = self._repository.list_pending_requests(
-            requested_date=requested_date,
-            requested_time_slot=requested_time_slot,
-        )
-        predictions = self._repository.list_idle_predictions(
             requested_date=requested_date,
             requested_time_slot=requested_time_slot,
         )
@@ -412,14 +653,13 @@ class AllocationOptimizationService:
             )
             return result
 
-        artifacts = build_model(
+        predictions = self._ensure_predictions_for_slot(
+            requested_date=requested_date,
+            requested_time_slot=requested_time_slot,
             rooms=rooms,
-            requests=requests,
-            predictions=predictions,
-            config=config,
         )
-        result = solve_model(
-            artifacts=artifacts,
+
+        result = optimize_with_fallback(
             rooms=rooms,
             requests=requests,
             predictions=predictions,

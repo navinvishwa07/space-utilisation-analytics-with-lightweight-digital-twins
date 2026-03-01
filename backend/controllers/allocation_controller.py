@@ -172,8 +172,9 @@ def get_matching_service(request: Request) -> AllocationOptimizationService:
     "/predict_availability",
     response_model=AvailabilityPredictionResponse,
     status_code=status.HTTP_200_OK,
+    dependencies=[Depends(require_admin)],
 )
-def predict_availability(
+async def predict_availability(
     payload: AvailabilityPredictionRequest,
     service: AvailabilityPredictionService = Depends(get_prediction_service),
 ) -> AvailabilityPredictionResponse:
@@ -212,8 +213,9 @@ def predict_availability(
     "/optimize_allocation",
     response_model=OptimizeAllocationResponse,
     status_code=status.HTTP_200_OK,
+    dependencies=[Depends(require_admin)],
 )
-def optimize_allocation(
+async def optimize_allocation(
     payload: OptimizeAllocationRequest,
     service: AllocationOptimizationService = Depends(get_matching_service),
 ) -> OptimizeAllocationResponse:
