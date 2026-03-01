@@ -1,145 +1,277 @@
-# SIET Space Utilization Digital Twin
+# SIET — Space Utilisation Digital Twin
 
-FastAPI-based space utilization analytics system with:
-- deterministic synthetic occupancy data,
-- logistic-regression idle prediction,
-- CP-SAT weighted allocation with deterministic greedy fallback,
-- in-memory what-if simulation,
-- authenticated admin dashboard flow.
+**AMD Slingshot Hackathon Submission**
 
-## What Happens On Startup
+A lightweight digital twin platform that predicts idle room capacity, forecasts demand,
+optimises fair allocation using CP-SAT integer programming, and simulates policy changes
+before committing them — all through a clean admin dashboard.
 
-When the app starts, startup is idempotent and deterministic:
-1. Initialize SQLite schema at `backend/data/siet.db`.
-2. Seed synthetic booking history from `backend/data/synthetic_dataset.csv` if needed.
-3. Seed deterministic demo requests **only if** `Requests` is empty.
-4. Train and register prediction model metadata (`ModelRegistry`).
-
-No duplicate synthetic rows are inserted on restarts.  
-Demo requests are seeded once and never duplicated if requests already exist.
-
-## Determinism Guarantees
-
-- Synthetic CSV generation uses fixed seed and fixed reference end date.
-- If synthetic CSV already exists, it is reused (not regenerated).
-- Allocation solver seed is fixed.
-- Greedy fallback is deterministic (stable sort strategy).
-- Simulation is in-memory and does not mutate production data/tables.
+---
 
 ## Architecture
 
 ```
-backend/
-  controllers/   # FastAPI routes and request/response validation
-  services/      # Business logic (prediction, allocation, simulation, auth, workflow)
-  repository/    # SQLite access only
-  domain/        # Core models and constraints
-  utils/         # config and logging
-  data/          # database + synthetic csv
-dashboard/
-  index.html     # browser dashboard (served by FastAPI)
-main.py          # ASGI entrypoint for uvicorn main:app --reload
+HTML Admin Dashboard  (dashboard/index.html)
+          │
+          ▼
+FastAPI Backend  (uvicorn, single process)
+          │
+  ┌───────┼───────┐
+  │       │       │
+Predict  Alloc  Simulate
+  │       │       │
+  └───────┴───────┘
+          │
+   SQLite + CSV
 ```
 
-Layering rule:
-- Controllers -> Services -> Repository.
-- Services do not access SQLite directly.
+**Four-layer separation, strictly enforced:**
 
-## Authentication
+```
+backend/
+  controllers/   ← HTTP routing and input validation only
+  services/      ← All business logic (prediction, matching, simulation, auth, workflow)
+  repository/    ← All SQLite access, zero business logic
+  domain/        ← Pure dataclasses and constraint rules
+  utils/         ← Config and logging
+  data/          ← SQLite database + synthetic CSV
+dashboard/
+  index.html     ← Single-file HTML/JS admin dashboard
+scripts/
+  demo.sh                  ← Full 7-step demo via curl
+  validate_environment.py  ← Pre-demo environment check
+docs/
+  API.md          ← Full endpoint reference
+  DEMO.md         ← Step-by-step demo guide
+  Architecture.md ← System design
+  PRD.md          ← Product requirements
+  MVP.md          ← MVP scope definition
+  Plan.md         ← Execution plan
+  Skills.md       ← Skills demonstrated
+```
 
-- `POST /login` validates `ADMIN_TOKEN` and returns bearer token.
-- Protected endpoints require `Authorization: Bearer <token>`.
-- Default token is `admin-token` unless overridden via `ADMIN_TOKEN`.
+---
 
-## API Endpoints
+## Quick Start
 
-- `POST /login`
-- `POST /predict`
-- `POST /allocate`
-- `POST /simulate`
-- `POST /approve`
-- `GET /metrics`
-- `GET /demo_context`
-
-Legacy service endpoints (also protected):
-- `POST /predict_availability`
-- `POST /optimize_allocation`
-
-## Install
+### 1. Install
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
+python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-## Environment Setup
-
-Copy `.env.example` to `.env` and set your `ADMIN_TOKEN`:
+### 2. Configure
 
 ```bash
 cp .env.example .env
+# Edit .env if needed — default ADMIN_TOKEN=admin-token works for local demo
 ```
 
-Edit `.env` to set a token value. The default `admin-token` is fine for local demo.
-For any shared or non-local environment, use a strong random secret.
-
-Alternatively, export directly in your shell:
+### 3. Validate environment (optional but recommended)
 
 ```bash
-export ADMIN_TOKEN="your-secure-token"
+python scripts/validate_environment.py
 ```
 
-## Run
+### 4. Run
 
 ```bash
-export ADMIN_TOKEN="admin-token"
-uvicorn main:app --reload
+python main.py
+```
+
+This starts the server **and opens the dashboard automatically** in your browser.
+
+The dashboard will appear at `http://127.0.0.1:8000/dashboard`.
+
+**Alternative (without browser auto-open):**
+```bash
+uvicorn app:app --reload
 ```
 
 > **⚠️ Single-worker requirement:** The allocate → approve workflow stores the pending
-> allocation draft in process memory. Always run with a single worker (the `--reload`
-> default). Running `uvicorn main:app --workers 4` will cause `/approve` to fail with
-> "No allocation draft found" because the draft lives in a different worker process.
-> Multi-worker session persistence (e.g., Redis-backed draft store) is a post-MVP concern.
+> allocation draft in process memory. Always run with a single worker (the default).
+> Running `uvicorn app:app --workers 4` will break the allocate → approve flow.
 
-Open dashboard:
-- `http://127.0.0.1:8000/dashboard`
+### 5. Open dashboard
 
-## Quick Demo Flow
+```
+http://127.0.0.1:8000/dashboard
+```
 
-1. Login with `ADMIN_TOKEN`.
-2. Click `Predict` to generate idle probabilities.
-3. Click `Allocate` to preview allocation results.
-4. Click `Run Simulation` to compare baseline vs temporary overrides.
-5. Click `Approve` to persist final allocation logs and request status.
-6. Click `Refresh Metrics` to re-read metrics.
+Enter `admin-token` (or your configured `ADMIN_TOKEN`) to log in.
 
-No manual SQL or DB edits are needed for demo flow.
+---
 
-## Allocation Fallback Behavior
+## Dashboard Workflow
 
-Primary path:
-- CP-SAT weighted optimization.
+The dashboard separates authentication from the workflow panels:
 
-Automatic fallback path:
-- If CP-SAT dependency is unavailable, solver fails, or returns infeasible/empty despite feasible pairs, a deterministic greedy allocator runs.
-- Greedy order:
-  - requests sorted by descending priority then request id,
-  - choose highest-idle eligible room meeting capacity and threshold,
-  - stable tie-breaking by capacity then room id.
+| Step | Action | Result |
+|------|--------|--------|
+| 1 | Enter ADMIN_TOKEN → Login | Session token issued. Demo context auto-loaded. |
+| 2 | Click **Predict** | Idle probabilities computed for all 10 rooms. |
+| 3 | Click **Allocate** | CP-SAT optimisation runs. Draft stored in memory. |
+| 4 | Click **Run Simulation** | What-if scenario compared to baseline. |
+| 5 | Read Metrics panel | Before/after utilisation, efficiency score, delta. |
+| 6 | Click **Approve** | Draft persisted to AllocationLogs. Requests marked ALLOCATED. |
+| 7 | Click **Refresh Metrics** | Metrics updated from latest simulation state. |
 
-## Model Versioning
+---
 
-Model training metadata is stored in `ModelRegistry`:
-- `model_type`
-- `model_version`
-- `trained_at`
+## API Endpoints
 
-Retraining overwrites row `id=1` deterministically and does not affect existing prediction rows.
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | `/login` | No | Get session bearer token |
+| GET | `/demo_context` | No | Load first pending window for dashboard pre-fill |
+| POST | `/predict` | Yes | Idle probability for all rooms |
+| POST | `/allocate` | Yes | Preview CP-SAT allocation (draft, not persisted) |
+| POST | `/simulate` | Yes | In-memory what-if scenario with constraint overrides |
+| POST | `/approve` | Yes | Persist pending draft to AllocationLogs |
+| GET | `/metrics` | Yes | Four headline metrics (before vs after) |
+| POST | `/predict_availability` | Yes | Single-room idle probability (legacy) |
+| POST | `/optimize_allocation` | Yes | Raw allocation without draft workflow (legacy) |
+
+See [`docs/API.md`](docs/API.md) for full request/response schemas.
+
+---
+
+## What Happens on Startup
+
+Startup is **idempotent** — safe to restart without data loss:
+
+1. Initialise SQLite schema (`backend/data/siet.db`)
+2. Validate and load `backend/data/synthetic_dataset.csv` into `BookingHistory`
+3. Seed 8 deterministic demo requests into `Requests` (only if empty)
+4. Train LogisticRegression prediction model and register metadata in `ModelRegistry`
+
+No duplicate rows are ever inserted on restarts.
+
+---
+
+## Synthetic Dataset
+
+- **10 rooms** across 5 blocks (Classroom, Auditorium, Lab, Seminar types)
+- **21 days** of booking history (2026-02-01 to 2026-02-21)
+- **4 time slots** per day: `09-11`, `11-13`, `14-16`, `16-18`
+- **840 rows** total, deterministic (`random.seed(42)`)
+- Weekday occupancy probability: **0.65** | Weekend: **0.35**
+
+---
+
+## ML Model
+
+**LogisticRegression** with `DummyClassifier` fallback if training labels are single-class.
+
+Features (all leakage-free):
+- `day_of_week` — integer (0–6)
+- `time_slot` — OneHotEncoded
+- `room_type` — OneHotEncoded
+- `historical_occupancy_frequency` — cumulative mean (shift prevents look-ahead)
+- `rolling_7d_occupancy_average` — shift(1).rolling(7) prevents look-ahead
+
+Output: `idle_probability` ∈ [0,1], `confidence_score` = `2 × |idle − 0.5|`
+
+---
+
+## Allocation Engine
+
+**CP-SAT integer programming** (OR-Tools) with deterministic **greedy fallback**.
+
+Objective: `maximise Σ idle_probability × priority_weight`
+
+Hard constraints:
+- Room capacity ≥ requested capacity
+- No room allocated to more than one request per slot
+- One allocation per request maximum
+- Only rooms above `idle_probability_threshold` are eligible
+- Stakeholder usage capped at `stakeholder_usage_cap × total_requests`
+
+Fallback triggers automatically when:
+- OR-Tools is unavailable
+- Solver returns infeasible/unknown status
+- Solver returns OPTIMAL but zero allocations despite feasible pairs
+
+Fairness: **Jain's index** computed across stakeholders for every allocation result.
+
+---
+
+## Simulation Engine
+
+Fully isolated in-memory what-if analysis:
+
+- `copy.deepcopy()` isolates dataset before applying overrides
+- `persist=False` on all prediction calls — nothing written to DB
+- Separate `simulation_solver_random_seed` for independent determinism
+- Tests verify zero row-count changes across all tables after simulation
+
+Override types: `idle_threshold`, `stakeholder_cap`, `capacity_override`, `priority_adjustment`
+
+---
+
+## Authentication
+
+- `POST /login` validates `ADMIN_TOKEN` with `secrets.compare_digest`
+- Returns an ephemeral session token (`secrets.token_urlsafe(32)`) — **distinct from the admin secret**
+- All protected endpoints require `Authorization: Bearer <session_token>`
+- `GET /demo_context` is public (no auth) for cold-demo dashboard loading
+
+---
 
 ## Tests
 
 ```bash
 pytest -q
 ```
+
+Test suite covers:
+- `test_prediction.py` — inference, persistence, model metadata
+- `test_matching.py` — allocation service, endpoint, zero-idle edge case
+- `test_simulation.py` — isolation, determinism, endpoint validation
+- `test_dashboard_flow.py` — full end-to-end login → predict → allocate → simulate → approve
+- `test_repository_seeding.py` — CSV generation, idempotency, demo request seeding
+- `test_allocation_fallback.py` — greedy fallback, auto-prediction generation
+- `test_constraints.py` — all six validation branches of AllocationConfig
+
+---
+
+## CLI Demo
+
+```bash
+# Server must be running in another terminal
+bash scripts/demo.sh
+```
+
+Runs the full 7-step flow (login → demo context → predict → allocate → simulate →
+metrics → approve) via curl and prints results. Uses `jq` if available.
+
+---
+
+## Documentation
+
+| File | Description |
+|------|-------------|
+| [`docs/API.md`](docs/API.md) | Full REST API reference with request/response examples |
+| [`docs/DEMO.md`](docs/DEMO.md) | Step-by-step demo guide with technical highlights |
+| [`docs/Architecture.md`](docs/Architecture.md) | System design and layer descriptions |
+| [`docs/PRD.md`](docs/PRD.md) | Product requirements document |
+| [`docs/MVP.md`](docs/MVP.md) | MVP scope definition |
+| [`docs/Plan.md`](docs/Plan.md) | 7-day hackathon execution plan |
+| [`docs/Skills.md`](docs/Skills.md) | Engineering skills demonstrated |
+
+---
+
+## Project Constraints
+
+- Single-worker deployment required (in-memory allocation draft)
+- No multi-tenant support — single admin operator model
+- No real-time sensor integration — synthetic historical data only
+- SQLite only — no external database required
+- No Streamlit — dashboard is pure HTML/JS served by FastAPI
+
+---
+
+## License
+
+MIT — see [LICENSE](LICENSE)

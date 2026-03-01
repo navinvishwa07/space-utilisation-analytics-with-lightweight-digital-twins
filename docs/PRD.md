@@ -61,6 +61,11 @@ This system addresses those gaps.
 - Predictions
 - AllocationLogs
 - DemandForecastLogs
+- ModelRegistry
+
+`ModelRegistry` stores model training metadata (model_type, model_version, trained_at,
+training_rows) using a single-row upsert design (id = 1) that overwrites on each
+training run without accumulating history.
 
 ### Synthetic Dataset Requirements
 
@@ -208,12 +213,29 @@ The system qualifies as MVP-complete when:
 
 ---
 
+## 11a. Authentication
+
+The system implements single-token admin authentication:
+
+- `POST /login` validates the provided token against `ADMIN_TOKEN` using
+  `secrets.compare_digest` (constant-time, timing-attack resistant).
+- On success, an ephemeral session token (`secrets.token_urlsafe(32)`) is generated and
+  returned. The session token is distinct from the admin secret.
+- Protected endpoints require `Authorization: Bearer <session_token>`.
+- `GET /demo_context` is intentionally public to support cold-demo pre-loading.
+- Default token: `admin-token` (local dev only). Set `ADMIN_TOKEN` in `.env` for any
+  non-local environment.
+
+Scope: single admin operator. No role-based access, no multi-tenant support.
+
+---
+
 ## 12. Future Enhancements
 
 - True lexicographic tier optimization
 - Multi-day rolling allocation planning
 - Real-time streaming demand ingestion
-- Visualization dashboard
+- Advanced visualisation (room heatmaps, allocation timelines, multi-day calendar views)
 - Explainable allocation scoring
 - Multi-institution federation support
 

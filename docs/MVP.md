@@ -26,7 +26,7 @@ The MVP focuses on a single campus or institution with 10–20 modeled rooms.
 - Demand forecasting model
 - Fairness-aware allocation engine (OR-Tools)
 - What-if simulation engine
-- Streamlit dashboard
+- HTML Admin Dashboard (login screen → full workflow, served by FastAPI at `/dashboard`)
 - Allocation audit logs
 
 ### Excluded

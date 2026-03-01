@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Usage: bash scripts/demo.sh
 # Requires: curl, jq (jq is optional — falls back to raw output if missing)
-# The SIET server must be running: uvicorn main:app --reload
+# The SIET server must be running: python main.py
+# Or directly: uvicorn app:app --reload
 
 set -euo pipefail
 

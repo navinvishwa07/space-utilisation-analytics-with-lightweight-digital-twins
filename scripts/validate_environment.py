@@ -19,6 +19,8 @@ from backend.repository.data_repository import DataRepository
 from backend.services.prediction_service import AvailabilityPredictionService
 from backend.utils.config import get_settings
 
+SEPARATOR_LINE = "=" * 44
+
 
 def _print_result(name: str, success: bool, detail: str = "") -> tuple[bool, str]:
     if success:
@@ -168,18 +170,18 @@ def main() -> int:
     finally:
         shutil.rmtree(temp_dir, ignore_errors=True)
 
-    print("============================================")
+    print(SEPARATOR_LINE)
     print(" SIET Environment Validation")
-    print("============================================")
+    print(SEPARATOR_LINE)
     for line in results:
         print(f" {line}")
-    print("============================================")
+    print(SEPARATOR_LINE)
     if all_passed:
         print(" All checks passed. Environment is ready.")
-        print("============================================")
+        print(SEPARATOR_LINE)
         return 0
     print(" One or more checks failed.")
-    print("============================================")
+    print(SEPARATOR_LINE)
     return 1
 
 

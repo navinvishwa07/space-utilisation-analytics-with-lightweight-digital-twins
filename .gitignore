@@ -10,13 +10,25 @@ __pycache__/
 
 # Virtual Environments
 venv/
-.env/
 .venv/
 env/
+.env/
 
-# Environment variables
+# ========================
+# Environment Variables
+# ========================
 .env
 .env.local
+.env.*.local
+# Note: .env.example is intentionally committed — it is safe to version-control
+
+# ========================
+# Database
+# ========================
+*.db
+*.sqlite
+*.sqlite3
+backend/data/siet.db
 
 # ========================
 # Logs
@@ -25,52 +37,59 @@ env/
 logs/
 
 # ========================
-# Data Files (optional)
+# Testing & Coverage
 # ========================
-# Uncomment if datasets should not be committed
-# backend/data/*.csv
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
 
 # ========================
-# Database Files
+# Build Artifacts
 # ========================
-*.db
-siet.db
+dist/
+build/
+*.egg-info/
+*.egg
 
 # ========================
 # Jupyter
 # ========================
 .ipynb_checkpoints/
+*.ipynb
 
 # ========================
-# VS Code
+# IDE & Editors
 # ========================
 .vscode/
+.idea/
+*.swp
+*.swo
+*~
 
 # ========================
 # macOS
 # ========================
 .DS_Store
+.AppleDouble
+.LSOverride
 
 # ========================
-# Test / Coverage
+# Windows
 # ========================
-.pytest_cache/
-.coverage
-htmlcov/
+Thumbs.db
+ehthumbs.db
+Desktop.ini
 
 # ========================
-# Build
-# ========================
-dist/
-build/
-*.egg-info/
-
-# ========================
-# Streamlit
+# Streamlit (legacy — no longer used)
 # ========================
 .streamlit/
 
 # ========================
-# OS Generated
+# Temporary / OS
 # ========================
-Thumbs.db
+*.tmp
+*.temp
+*.bak
