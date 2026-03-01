@@ -2,9 +2,9 @@
 
 ## 1. High-Level Architecture
 
-Streamlit Dashboard
+HTML Admin Dashboard  (dashboard/index.html — served by FastAPI at /dashboard)
         |
-FastAPI Backend
+FastAPI Backend  (uvicorn, single process)
         |
 -------------------------
 | Prediction Module     |
@@ -13,6 +13,10 @@ FastAPI Backend
 -------------------------
         |
 CSV / SQLite Data Store
+
+The dashboard is a pure HTML/JS single-page interface served directly by FastAPI, requiring
+no additional server process. This eliminates the Streamlit runtime dependency and allows the
+admin interface to share the same origin as the API, avoiding CORS complexity.
 
 ---
 

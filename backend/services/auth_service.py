@@ -25,6 +25,7 @@ class AuthService:
 
     def __init__(self, settings: Optional[Settings] = None) -> None:
         self._settings = settings or get_settings()
+        self._session_token: str | None = None
 
     @property
     def auth_enabled(self) -> bool:
@@ -41,11 +42,13 @@ class AuthService:
         expected = self._expected_token()
         if not secrets.compare_digest(provided_admin_token, expected):
             raise InvalidAdminTokenError("Invalid admin token")
-        return expected
+        self._session_token = secrets.token_urlsafe(32)
+        return self._session_token
 
     def validate_bearer_token(self, bearer_token: str) -> None:
         if not self.auth_enabled:
             return
-        expected = self._expected_token()
-        if not secrets.compare_digest(bearer_token, expected):
+        if self._session_token is None:
+            raise InvalidAdminTokenError("No active session. Login first.")
+        if not secrets.compare_digest(bearer_token, self._session_token):
             raise InvalidAdminTokenError("Invalid bearer token")
