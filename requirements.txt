@@ -7,3 +7,4 @@ scikit-learn==1.4.2
 ortools==9.9.3963
 httpx==0.27.0
 pytest==8.3.5
+python-dotenv==1.0.1

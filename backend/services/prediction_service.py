@@ -276,6 +276,7 @@ class AvailabilityPredictionService:
                 model_type=model_name,
                 model_version=self._settings.prediction_model_version,
                 trained_at=trained_at,
+                training_rows=self._training_rows,
             )
             logger.info(
                 "Prediction training completed | rows=%s | model=%s | version=%s | trained_at=%s",

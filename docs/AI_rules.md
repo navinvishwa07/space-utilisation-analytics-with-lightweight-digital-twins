@@ -29,11 +29,13 @@ Fallback mechanism required
 
 ---
 
-## 4. Security Simplification
+## 4. Security
 
-No authentication for MVP  
-Assume trusted local admin  
-Do not simulate fake payment logic  
+Simple single-token admin authentication  
+Bearer session token returned on login (token differs from admin secret)  
+Admin secret validated via constant-time comparison (secrets.compare_digest)  
+Do not implement multi-tenant or role-based access control  
+Do not simulate payment or billing logic  
 
 ---
 

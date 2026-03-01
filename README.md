@@ -73,12 +73,35 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
+## Environment Setup
+
+Copy `.env.example` to `.env` and set your `ADMIN_TOKEN`:
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` to set a token value. The default `admin-token` is fine for local demo.
+For any shared or non-local environment, use a strong random secret.
+
+Alternatively, export directly in your shell:
+
+```bash
+export ADMIN_TOKEN="your-secure-token"
+```
+
 ## Run
 
 ```bash
 export ADMIN_TOKEN="admin-token"
 uvicorn main:app --reload
 ```
+
+> **⚠️ Single-worker requirement:** The allocate → approve workflow stores the pending
+> allocation draft in process memory. Always run with a single worker (the `--reload`
+> default). Running `uvicorn main:app --workers 4` will cause `/approve` to fail with
+> "No allocation draft found" because the draft lives in a different worker process.
+> Multi-worker session persistence (e.g., Redis-backed draft store) is a post-MVP concern.
 
 Open dashboard:
 - `http://127.0.0.1:8000/dashboard`

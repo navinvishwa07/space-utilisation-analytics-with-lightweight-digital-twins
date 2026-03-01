@@ -354,7 +354,8 @@ class DataRepository:
                         id INTEGER PRIMARY KEY CHECK (id = 1),
                         model_type TEXT NOT NULL,
                         model_version TEXT NOT NULL,
-                        trained_at TEXT NOT NULL
+                        trained_at TEXT NOT NULL,
+                        training_rows INTEGER NOT NULL DEFAULT 0
                     );
                     """
                 )
@@ -404,6 +405,18 @@ class DataRepository:
                         """
                         ALTER TABLE Requests
                         ADD COLUMN stakeholder_id TEXT NOT NULL DEFAULT 'UNKNOWN';
+                        """
+                    )
+
+                cursor.execute("PRAGMA table_info(ModelRegistry);")
+                registry_columns = {
+                    str(row["name"]) for row in cursor.fetchall()
+                }
+                if "training_rows" not in registry_columns:
+                    cursor.execute(
+                        """
+                        ALTER TABLE ModelRegistry
+                        ADD COLUMN training_rows INTEGER NOT NULL DEFAULT 0;
                         """
                     )
                 conn.commit()
@@ -956,28 +969,32 @@ class DataRepository:
         model_type: str,
         model_version: str,
         trained_at: str,
+        training_rows: int,
     ) -> None:
         with self._connect() as conn:
             cursor = conn.cursor()
             cursor.execute(
                 """
-                INSERT INTO ModelRegistry (id, model_type, model_version, trained_at)
-                VALUES (1, ?, ?, ?)
+                INSERT INTO ModelRegistry (
+                    id, model_type, model_version, trained_at, training_rows
+                )
+                VALUES (1, ?, ?, ?, ?)
                 ON CONFLICT(id) DO UPDATE SET
                     model_type = excluded.model_type,
                     model_version = excluded.model_version,
-                    trained_at = excluded.trained_at;
+                    trained_at = excluded.trained_at,
+                    training_rows = excluded.training_rows;
                 """,
-                (model_type, model_version, trained_at),
+                (model_type, model_version, trained_at, training_rows),
             )
             conn.commit()
 
-    def get_model_metadata(self) -> Optional[dict[str, str]]:
+    def get_model_metadata(self) -> Optional[dict[str, str | int]]:
         with self._connect() as conn:
             cursor = conn.cursor()
             cursor.execute(
                 """
-                SELECT model_type, model_version, trained_at
+                SELECT model_type, model_version, trained_at, training_rows
                 FROM ModelRegistry
                 WHERE id = 1;
                 """
@@ -989,6 +1006,7 @@ class DataRepository:
                 "model_type": str(row["model_type"]),
                 "model_version": str(row["model_version"]),
                 "trained_at": str(row["trained_at"]),
+                "training_rows": int(row["training_rows"]),
             }
 
 

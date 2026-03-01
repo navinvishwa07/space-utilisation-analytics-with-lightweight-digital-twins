@@ -9,7 +9,9 @@ from fastapi.testclient import TestClient
 pytest.importorskip("ortools")
 
 from backend.controllers.allocation_controller import router
+from backend.controllers.dashboard_controller import router as dashboard_router
 from backend.repository.data_repository import DataRepository
+from backend.services.auth_service import AuthService
 from backend.services.prediction_service import AvailabilityPredictionService
 from backend.services.simulation_service import SimulationService, TemporaryConstraints
 from backend.utils.config import get_settings
@@ -59,6 +61,13 @@ def _build_simulation_service(
         settings=settings,
         prediction_service=prediction_service,
     )
+
+
+def _login(client: TestClient, admin_token: str = "admin-token") -> dict[str, str]:
+    response = client.post("/login", json={"admin_token": admin_token})
+    assert response.status_code == 200
+    access_token = response.json()["access_token"]
+    return {"Authorization": f"Bearer {access_token}"}
 
 
 def test_simulation_service_does_not_persist_allocation_side_effects(tmp_path):
@@ -137,12 +146,15 @@ def test_simulate_endpoint_validates_unknown_capacity_override_room(tmp_path):
 
     app = FastAPI()
     app.include_router(router)
+    app.include_router(dashboard_router)
     app.state.repository = repository
     app.state.prediction_service = None
     app.state.matching_service = None
     app.state.simulation_service = simulation_service
+    app.state.auth_service = AuthService(settings=settings)
 
     client = TestClient(app)
+    headers = _login(client)
     response = client.post(
         "/simulate",
         json={
@@ -150,7 +162,7 @@ def test_simulate_endpoint_validates_unknown_capacity_override_room(tmp_path):
                 "capacity_override": {"9999": 25}
             }
         },
-        headers={"Authorization": "Bearer admin-token"},
+        headers=headers,
     )
 
     assert response.status_code == 400

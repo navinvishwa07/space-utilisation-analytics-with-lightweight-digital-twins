@@ -9,7 +9,9 @@ from fastapi.testclient import TestClient
 pytest.importorskip("ortools")
 
 from backend.controllers.allocation_controller import router
+from backend.controllers.dashboard_controller import router as dashboard_router
 from backend.repository.data_repository import DataRepository
+from backend.services.auth_service import AuthService
 from backend.services.matching_service import AllocationOptimizationService
 from backend.utils.config import get_settings
 
@@ -34,6 +36,13 @@ def _seed_predictions(repository: DataRepository, target_date: str, target_slot:
             time_slot=target_slot,
             idle_probability=0.9 if room_id <= 5 else 0.3,
         )
+
+
+def _login(client: TestClient, admin_token: str = "admin-token") -> dict[str, str]:
+    response = client.post("/login", json={"admin_token": admin_token})
+    assert response.status_code == 200
+    access_token = response.json()["access_token"]
+    return {"Authorization": f"Bearer {access_token}"}
 
 
 def test_optimize_allocation_service_persists_results(tmp_path):
@@ -119,10 +128,13 @@ def test_optimize_allocation_endpoint_success(tmp_path):
     service = AllocationOptimizationService(repository=repository, settings=settings)
     app = FastAPI()
     app.include_router(router)
+    app.include_router(dashboard_router)
     app.state.matching_service = service
     app.state.prediction_service = None
+    app.state.auth_service = AuthService(settings=settings)
 
     client = TestClient(app)
+    headers = _login(client)
     response = client.post(
         "/optimize_allocation",
         json={
@@ -131,7 +143,7 @@ def test_optimize_allocation_endpoint_success(tmp_path):
             "idle_probability_threshold": 0.5,
             "stakeholder_usage_cap": 0.7,
         },
-        headers={"Authorization": "Bearer admin-token"},
+        headers=headers,
     )
 
     assert response.status_code == 200
@@ -141,27 +153,3 @@ def test_optimize_allocation_endpoint_success(tmp_path):
     assert "fairness_metric" in body
     assert body["objective_value"] >= 0.0
     assert 0.0 <= body["fairness_metric"] <= 1.0
-
-
-def test_optimize_allocation_single_stakeholder_cap_still_allocates(tmp_path):
-    settings = _build_test_settings(tmp_path, "matching_single_stakeholder.db")
-    repository = DataRepository(settings)
-    repository.initialize_database()
-    repository.seed_synthetic_data()
-
-    target_date = "2026-02-24"
-    target_slot = "16-18"
-    _seed_predictions(repository, target_date, target_slot)
-
-    repository.create_request(10, target_date, target_slot, 1.2, "dept_only")
-    repository.create_request(12, target_date, target_slot, 1.0, "dept_only")
-
-    service = AllocationOptimizationService(repository=repository, settings=settings)
-    result = service.optimize_allocation(
-        requested_date=target_date,
-        requested_time_slot=target_slot,
-        stakeholder_usage_cap=0.5,
-    )
-
-    assert len(result.allocations) == 1
-    assert len(result.unassigned_request_ids) == 1

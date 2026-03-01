@@ -44,6 +44,10 @@
         border-radius: 18px;
         padding: 22px 20px;
         box-shadow: 0 20px 40px rgba(15, 79, 115, 0.2);
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 12px;
       }
 
       .hero h1 {
@@ -54,6 +58,18 @@
       .hero p {
         margin: 0;
         color: rgba(255, 255, 255, 0.9);
+      }
+
+      .admin-badge {
+        font-size: 0.78rem;
+        color: rgba(255, 255, 255, 0.85);
+        text-align: right;
+        display: none;
+      }
+
+      .admin-badge a {
+        color: rgba(255, 255, 255, 0.85);
+        text-decoration: underline;
       }
 
       .grid {
@@ -203,6 +219,17 @@
         color: var(--error);
       }
 
+      .login-shell {
+        max-width: 480px;
+        margin: clamp(48px, 12vh, 120px) auto 0;
+      }
+
+      .login-subtitle {
+        margin: 12px 4px 0;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
       @media (max-width: 740px) {
         .hero h1 {
           font-size: 1.3rem;
@@ -213,22 +240,36 @@
   <body>
     <div class="wrapper">
       <section class="hero">
-        <h1>Space Utilization Digital Twin Dashboard</h1>
-        <p>Login → Predict → Allocate → Simulate → Approve</p>
+        <div>
+          <h1>Space Utilization Digital Twin Dashboard</h1>
+          <p>Login → Predict → Allocate → Simulate → Approve</p>
+        </div>
+        <div id="adminBadge" class="admin-badge">
+          Logged in as admin
+          <a href="#" id="logoutLink">Logout</a>
+        </div>
       </section>
 
-      <div class="grid">
-        <section class="panel">
-          <h2>Authentication</h2>
-          <div class="controls">
-            <div>
-              <label for="adminToken">Admin Token</label>
-              <input id="adminToken" type="password" placeholder="Enter ADMIN_TOKEN" />
+      <div id="loginScreen">
+        <div class="login-shell">
+          <section class="panel">
+            <h2>Authentication</h2>
+            <div class="controls">
+              <div>
+                <label for="adminToken">Admin Token</label>
+                <input id="adminToken" type="password" placeholder="Enter ADMIN_TOKEN" />
+              </div>
+              <button id="loginBtn">Login</button>
             </div>
-            <button id="loginBtn">Login</button>
-          </div>
-        </section>
+            <div id="status" class="status"></div>
+          </section>
+          <p class="login-subtitle">
+            Enter your ADMIN_TOKEN to access the Space Utilisation Digital Twin.
+          </p>
+        </div>
+      </div>
 
+      <div id="dashboardScreen" class="grid" style="display:none">
         <section class="panel">
           <h2>Workflow Controls</h2>
           <div class="controls">
@@ -335,15 +376,18 @@
           </div>
         </section>
       </div>
-
-      <div id="status" class="status"></div>
+      <div id="dashboardStatus" class="status"></div>
     </div>
 
     <script>
       const state = { bearerToken: "" };
 
+      const loginScreenNode = document.getElementById("loginScreen");
+      const dashboardScreenNode = document.getElementById("dashboardScreen");
       const statusNode = document.getElementById("status");
+      const dashboardStatusNode = document.getElementById("dashboardStatus");
       const demoContextHintNode = document.getElementById("demoContextHint");
+      const adminBadgeNode = document.getElementById("adminBadge");
       const predictionBody = document.querySelector("#predictionTable tbody");
       const allocationBody = document.querySelector("#allocationTable tbody");
 
@@ -353,6 +397,20 @@
       function setStatus(message, level = "ok") {
         statusNode.className = `status ${level}`;
         statusNode.textContent = message;
+        dashboardStatusNode.className = `status ${level}`;
+        dashboardStatusNode.textContent = message;
+      }
+
+      function setAuthenticatedView(isAuthenticated) {
+        if (isAuthenticated) {
+          loginScreenNode.style.display = "none";
+          dashboardScreenNode.style.display = "grid";
+          adminBadgeNode.style.display = "block";
+          return;
+        }
+        dashboardScreenNode.style.display = "none";
+        loginScreenNode.style.display = "block";
+        adminBadgeNode.style.display = "none";
       }
 
       function numOrNull(value) {
@@ -424,10 +482,20 @@
           const payload = { admin_token: adminToken };
           const result = await apiRequest("/login", { method: "POST", body: JSON.stringify(payload) });
           state.bearerToken = result.access_token;
-          setStatus("Login successful. Protected endpoints are unlocked.", "ok");
+          setAuthenticatedView(true);
+          await loadDemoContext();
+          setStatus("Logged in. Demo context loaded.", "ok");
         } catch (error) {
           setStatus(error.message, "error");
         }
+      });
+
+      document.getElementById("logoutLink").addEventListener("click", (event) => {
+        event.preventDefault();
+        state.bearerToken = "";
+        setAuthenticatedView(false);
+        setStatus("", "ok");
+        dashboardStatusNode.textContent = "";
       });
 
       document.getElementById("predictBtn").addEventListener("click", async () => {
@@ -517,7 +585,6 @@
         }
       });
 
-      loadDemoContext();
     </script>
   </body>
 </html>
