@@ -6,8 +6,8 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from backend.conrollers.allocation_controller import router as prediction_router
-from backend.conrollers.dashboard_controller import router as dashboard_router
+from backend.controllers.allocation_controller import router as prediction_router
+from backend.controllers.dashboard_controller import router as dashboard_router
 from backend.repository.data_repository import DataRepository
 from backend.services.auth_service import AuthService
 from backend.services.dashboard_service import DashboardWorkflowService
