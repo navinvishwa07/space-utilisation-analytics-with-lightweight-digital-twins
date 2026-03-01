@@ -320,15 +320,22 @@ def build_model(
         stakeholder = stakeholder_by_request_id[request_id]
         stakeholder_to_vars[stakeholder].append(var)
 
-    cap_scaled = int(round(config.stakeholder_usage_cap * config.objective_scale))
+    stakeholder_limit = _compute_stakeholder_cap_limit(
+        stakeholder_usage_cap=config.stakeholder_usage_cap,
+        total_requests=len(requests),
+    )
     for stakeholder, stakeholder_vars in stakeholder_to_vars.items():
         if not stakeholder_vars:
             continue
-        model.Add(sum(stakeholder_vars) * config.objective_scale <= cap_scaled * total_assigned)
+        model.Add(sum(stakeholder_vars) <= stakeholder_limit)
         logger.debug(
-            "Stakeholder cap constraint added | stakeholder_id=%s | cap=%.3f",
+            (
+                "Stakeholder cap constraint added | stakeholder_id=%s | cap=%.3f | "
+                "stakeholder_limit=%s"
+            ),
             stakeholder,
             config.stakeholder_usage_cap,
+            stakeholder_limit,
         )
 
     if variables:

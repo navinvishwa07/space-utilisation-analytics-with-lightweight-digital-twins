@@ -98,14 +98,7 @@ class SimulationMetrics:
 
 
 class SimulationService:
-    """Runs deterministic baseline vs what-if comparisons in memory.
-
-    WHY this service is isolated:
-    - Production optimization writes allocation/forecast logs and mutates request
-      status; simulation must not mutate any persisted state.
-    - Using deep-copied, in-memory datasets ensures temporary constraints are
-      discarded after the request, preserving production integrity.
-    """
+    """Runs deterministic baseline vs what-if comparisons in memory."""
 
     def __init__(
         self,
@@ -355,12 +348,7 @@ class SimulationService:
         dataset: ScenarioDataset,
         constraints: TemporaryConstraints,
     ) -> tuple[ScenarioDataset, AllocationConfig]:
-        """Apply temporary what-if constraints in memory only.
-
-        WHY deep copy:
-        - Baseline and simulated paths must be fully independent so simulation
-          does not leak temporary overrides into baseline references.
-        """
+        """Apply temporary what-if constraints in memory only."""
 
         self._validate_temporary_constraints(constraints=constraints, dataset=dataset)
         mutated_dataset = copy.deepcopy(dataset)

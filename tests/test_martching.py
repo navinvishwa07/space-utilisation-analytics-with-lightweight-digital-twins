@@ -141,3 +141,27 @@ def test_optimize_allocation_endpoint_success(tmp_path):
     assert "fairness_metric" in body
     assert body["objective_value"] >= 0.0
     assert 0.0 <= body["fairness_metric"] <= 1.0
+
+
+def test_optimize_allocation_single_stakeholder_cap_still_allocates(tmp_path):
+    settings = _build_test_settings(tmp_path, "matching_single_stakeholder.db")
+    repository = DataRepository(settings)
+    repository.initialize_database()
+    repository.seed_synthetic_data()
+
+    target_date = "2026-02-24"
+    target_slot = "16-18"
+    _seed_predictions(repository, target_date, target_slot)
+
+    repository.create_request(10, target_date, target_slot, 1.2, "dept_only")
+    repository.create_request(12, target_date, target_slot, 1.0, "dept_only")
+
+    service = AllocationOptimizationService(repository=repository, settings=settings)
+    result = service.optimize_allocation(
+        requested_date=target_date,
+        requested_time_slot=target_slot,
+        stakeholder_usage_cap=0.5,
+    )
+
+    assert len(result.allocations) == 1
+    assert len(result.unassigned_request_ids) == 1
