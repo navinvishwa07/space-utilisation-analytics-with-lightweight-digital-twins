@@ -71,14 +71,7 @@ class ModelMetadata:
 
 
 class AvailabilityPredictionService:
-    """Trains and serves the baseline logistic regression model.
-
-    WHY this shape:
-    - Repository dependency is injected so business logic stays decoupled from
-      SQLite details and remains unit-test friendly.
-    - Model state is cached in memory for low-latency inference and deterministic
-      startup lifecycle.
-    """
+    """Trains and serves the baseline logistic regression model."""
 
     _FEATURE_COLUMNS = [
         "day_of_week",
@@ -123,14 +116,7 @@ class AvailabilityPredictionService:
         return parsed_date
 
     def _build_training_frame(self, records: list[BookingRecord]) -> pd.DataFrame:
-        """Create model-ready frame with historical and rolling context.
-
-        WHY cumulative and shifted metrics:
-        - We compute prior occupancy statistics from earlier rows only, reducing
-          leakage from the target row into its own features.
-        - Rolling context captures short-term weekly patterns while preserving
-          the lightweight baseline objective.
-        """
+        """Create model-ready frame with historical and rolling context."""
 
         frame = pd.DataFrame(
             [
@@ -182,12 +168,7 @@ class AvailabilityPredictionService:
         return frame
 
     def prepare_features(self, room_id: int, date: str, time_slot: str) -> pd.DataFrame:
-        """Assemble inference-time features for a single room/date/slot request.
-
-        WHY this method exists:
-        - Feature derivation is isolated from training and prediction execution,
-          which makes correctness easier to test and debug independently.
-        """
+        """Assemble inference-time features for a single room/date/slot request."""
 
         parsed_date = self._validate_inputs(room_id=room_id, date=date, time_slot=time_slot)
         room = self._repository.get_room(room_id)
@@ -221,13 +202,7 @@ class AvailabilityPredictionService:
         return pd.DataFrame([feature_row], columns=self._FEATURE_COLUMNS)
 
     def train_model(self) -> None:
-        """Train baseline model once and cache it in memory.
-
-        WHY cached in service:
-        - Startup training avoids runtime latency spikes.
-        - Stateless endpoints can stay inference-only while still allowing manual
-          retraining through an explicit entry point.
-        """
+        """Train baseline model once and cache it in memory."""
 
         with self._model_lock:
             logger.info("Prediction training started")
@@ -273,8 +248,6 @@ class AvailabilityPredictionService:
                 )
                 model_name = "logistic_regression"
             else:
-                # Training can collapse to one class on tiny datasets; this
-                # preserves inference availability while surfacing a warning.
                 classifier = DummyClassifier(strategy="most_frequent")
                 model_name = "dummy_most_frequent"
                 logger.warning(
@@ -348,13 +321,7 @@ class AvailabilityPredictionService:
         *,
         persist: bool = True,
     ) -> Dict[str, float]:
-        """Run availability inference with optional persistence.
-
-        WHY `persist` exists:
-        - Simulation workflows must execute what-if runs without mutating
-          production observability tables.
-        - Default remains `True` to preserve existing endpoint behavior.
-        """
+        """Run availability inference with optional persistence."""
         with self._model_lock:
             feature_frame = self.prepare_features(
                 room_id=room_id,

@@ -37,7 +37,12 @@ def get_dashboard_service(request: Request) -> DashboardWorkflowService:
         prediction_service = getattr(request.app.state, "prediction_service", None)
         matching_service = getattr(request.app.state, "matching_service", None)
         simulation_service = getattr(request.app.state, "simulation_service", None)
-        if simulation_service is not None:
+        if (
+            repository is not None
+            and prediction_service is not None
+            and matching_service is not None
+            and simulation_service is not None
+        ):
             service = DashboardWorkflowService(
                 repository=repository,
                 prediction_service=prediction_service,
