@@ -613,10 +613,22 @@
     }
 
     function fillMetrics(m) {
-      document.getElementById('mBaseline').textContent = Number(m.baseline_idle_activation_rate).toFixed(4);
-      document.getElementById('mSimulated').textContent = Number(m.simulated_idle_activation_rate).toFixed(4);
-      document.getElementById('mEfficiency').textContent = Number(m.allocation_efficiency_score).toFixed(4);
-      document.getElementById('mDelta').textContent = Number(m.utilization_delta_percentage).toFixed(2) + '%';
+      console.log('[SIET] /metrics response:', JSON.stringify(m, null, 2));
+
+      function fmt(v, decimals) {
+        const n = Number(v);
+        return Number.isNaN(n) ? '—' : n.toFixed(decimals);
+      }
+
+      const baseline = fmt(m.baseline_idle_activation_rate, 4);
+      const simulated = fmt(m.simulated_idle_activation_rate, 4);
+      const efficiency = fmt(m.allocation_efficiency_score, 4);
+      const delta = fmt(m.utilization_delta_percentage, 2);
+
+      document.getElementById('mBaseline').textContent = baseline;
+      document.getElementById('mSimulated').textContent = simulated;
+      document.getElementById('mEfficiency').textContent = efficiency;
+      document.getElementById('mDelta').textContent = delta === '—' ? '—' : `${delta}%`;
     }
 
     async function loadDemoContext() {
@@ -718,6 +730,7 @@
         } : {};
         const sim = await api('/simulate', { method: 'POST', body: JSON.stringify(payload) });
         const m = await api('/metrics');
+        console.log('[SIET] metrics raw:', m);
         fillMetrics(m);
         const d = sim.delta;
         addLog('SIMULATE',
@@ -739,6 +752,7 @@
     refreshBtn.addEventListener('click', withLoading(refreshBtn, async () => {
       try {
         const m = await api('/metrics');
+        console.log('[SIET] metrics raw:', m);
         fillMetrics(m);
         addLog('METRICS', 'refreshed');
       } catch (e) { addLog('METRICS', e.message, 'error'); }
