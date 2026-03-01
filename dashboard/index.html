@@ -113,16 +113,19 @@
     .admin-badge a:hover { color: var(--text); }
 
     .guide-banner {
-      background: rgba(0, 77, 63, 0.35);
+      background: rgba(0, 77, 63, 0.4);
       border-bottom: 1px solid var(--border);
-      padding: 7px 24px;
-      display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
-      font-family: var(--font-mono); font-size: 0.72rem;
+      padding: 8px 24px;
+      display: flex !important;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      font-family: var(--font-mono);
+      font-size: 0.73rem;
     }
-    .guide-step { color: var(--muted); }
-    .guide-step.active { color: var(--accent); }
+    .guide-step { color: var(--accent); font-weight: 500; }
     .guide-arrow { color: var(--border); }
-    .guide-note { color: var(--muted); font-size: 0.68rem; }
+    .guide-note { color: var(--muted); font-size: 0.68rem; margin-left: 4px; }
 
     .content-grid {
       display: grid;
@@ -373,7 +376,7 @@
       </div>
     </header>
     <div class="guide-banner">
-      <span class="guide-step active">① Login</span>
+      <span class="guide-step">① Login</span>
       <span class="guide-arrow">→</span>
       <span class="guide-step">② Predict</span>
       <span class="guide-arrow">→</span>
@@ -567,10 +570,21 @@
       if (state.bearerToken) headers.Authorization = `Bearer ${state.bearerToken}`;
       const res = await fetch(path, { ...opts, headers });
       if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.detail || `HTTP ${res.status}`);
+        let msg = `HTTP ${res.status}`;
+        try {
+          const err = await res.json();
+          msg = err.detail || err.message || msg;
+        } catch (_) {
+          msg = res.statusText || msg;
+        }
+        throw new Error(msg);
       }
-      return res.status === 204 ? null : res.json();
+      if (res.status === 204) return null;
+      try {
+        return await res.json();
+      } catch (_) {
+        return null;
+      }
     }
 
     function setEmptyState(tbody, message) {
@@ -645,12 +659,18 @@
     }
 
     function withLoading(btn, fn) {
-      return async () => {
-        btn.disabled = true;
+      return async function() {
         const orig = btn.textContent;
-        btn.textContent = '···';
-        try { await fn(); }
-        finally { btn.disabled = false; btn.textContent = orig; }
+        btn.disabled = true;
+        btn.textContent = `${orig}…`;
+        try {
+          await fn();
+        } catch (e) {
+          console.error('[SIET] handler error:', e);
+        } finally {
+          btn.disabled = false;
+          btn.textContent = orig;
+        }
       };
     }
 
@@ -669,7 +689,7 @@
         addLog('LOGIN', 'authenticated - session token issued');
         await loadDemoContext();
       } catch (e) {
-        loginStatus.textContent = e.message;
+        loginStatus.textContent = String(e.message || e);
       }
     }));
 
@@ -693,7 +713,7 @@
           'room_id', 'date', 'time_slot', 'predicted_idle_probability', 'confidence_score'
         ]);
         addLog('PREDICT', `${r.predictions.length} rooms processed`);
-      } catch (e) { addLog('PREDICT', e.message, 'error'); }
+      } catch (e) { addLog('PREDICT', String(e.message || e), 'error'); }
     }));
 
     const allocateBtn = document.getElementById('allocateBtn');
@@ -716,7 +736,7 @@
           `fairness=${Number(r.fairness_metric).toFixed(4)} ` +
           `(${(r.allocations || []).length} assignments)`
         );
-      } catch (e) { addLog('ALLOCATE', e.message, 'error'); }
+      } catch (e) { addLog('ALLOCATE', String(e.message || e), 'error'); }
     }));
 
     const simBtn = document.getElementById('simulateBtn');
@@ -737,7 +757,7 @@
           `Δutil=${Number(d.utilization_change).toFixed(4)} ` +
           `Δreq=${d.request_change}`
         );
-      } catch (e) { addLog('SIMULATE', e.message, 'error'); }
+      } catch (e) { addLog('SIMULATE', String(e.message || e), 'error'); }
     }));
 
     const approveBtn = document.getElementById('approveBtn');
@@ -745,7 +765,7 @@
       try {
         const r = await api('/approve', { method: 'POST' });
         addLog('APPROVE', `${r.approved_allocations_count} allocations persisted`);
-      } catch (e) { addLog('APPROVE', e.message, 'error'); }
+      } catch (e) { addLog('APPROVE', String(e.message || e), 'error'); }
     }));
 
     const refreshBtn = document.getElementById('refreshMetricsBtn');
@@ -755,7 +775,7 @@
         console.log('[SIET] metrics raw:', m);
         fillMetrics(m);
         addLog('METRICS', 'refreshed');
-      } catch (e) { addLog('METRICS', e.message, 'error'); }
+      } catch (e) { addLog('METRICS', String(e.message || e), 'error'); }
     }));
 
     showLogin();
